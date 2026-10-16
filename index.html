@@ -1,0 +1,1250 @@
+<title>Plantas en acción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: escenario ilustrado a la izquierda (se acerca a cada parte y abre su escena), panel de explicación a la derecha; juegos en vista aparte */
+:root{
+  --bg:#e9f3ee; --paper:#ffffff; --ink:#1d2b22; --muted:#56685c; --line:#cfe0d4;
+  --leaf:#2b7a3d; --leaf-soft:#dbefdc; --sun:#f2ad1d; --sun-soft:#fdf0c9; --berry:#c2457a; --sky:#d6eefa;
+  --good:#2f9e55; --bad:#d6453d;
+  --shadow:0 12px 30px rgba(29,43,34,.13);
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101a14; --paper:#18241c; --ink:#e7f1e9; --muted:#9db3a3; --line:#2b3c31;
+  --leaf:#7fd08f; --leaf-soft:#20372a; --sun:#f5bd45; --sun-soft:#3a3016; --berry:#f08ab1; --sky:#1b2d3a;
+  --good:#5fd28a; --bad:#ff7a70; --shadow:0 12px 30px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101a14; --paper:#18241c; --ink:#e7f1e9; --muted:#9db3a3; --line:#2b3c31;
+  --leaf:#7fd08f; --leaf-soft:#20372a; --sun:#f5bd45; --sun-soft:#3a3016; --berry:#f08ab1; --sky:#1b2d3a;
+  --good:#5fd28a; --bad:#ff7a70; --shadow:0 12px 30px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 16px 56px}
+header.top{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 20px;margin-bottom:12px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,4.4vw,2.9rem);line-height:1;margin:0;color:var(--leaf);text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--berry);width:18px;height:18px}
+nav.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:14px}
+.tab{flex:0 0 auto;border:2px solid var(--line);background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:700;font-size:1.05rem;padding:6px 16px 3px;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tab .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--leaf-soft);color:var(--leaf);font-size:.85rem}
+.tab[aria-selected="true"]{background:var(--leaf);border-color:var(--leaf);color:var(--paper)}
+.tab[aria-selected="true"] .n{background:var(--paper);color:var(--leaf)}
+.tab.play{border-color:var(--sun)}
+.tab.play[aria-selected="true"]{background:var(--sun);border-color:var(--sun);color:#2a2005}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,380px);gap:22px;align-items:start}
+.col{min-width:0}
+.stage{position:relative;aspect-ratio:8/5;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:var(--sky);border:3px solid var(--paper)}
+.stage > svg{display:block;width:100%;height:100%}
+.hot{cursor:pointer}
+.hot:hover > .art,.hot:focus-visible > .art,.hot.active > .art{filter:drop-shadow(0 0 6px #ffd23f) drop-shadow(0 0 2px #ffd23f)}
+.hot:focus{outline:none}
+.badge circle.b{fill:#ffd23f;stroke:#7a5300;stroke-width:2}
+.badge text{font:800 15px var(--display);fill:#3a2a00}
+.hot.seen .badge circle.b{fill:#3fae5c;stroke:#1d5f2f}
+.hot.seen .badge text{fill:#fff}
+.ring{fill:none;stroke:#ffd23f;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}
+.hot.seen .ring{display:none}
+.hide-badges .badge{display:none}
+@keyframes ring{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.9);opacity:0}}
+.scene{position:absolute;inset:0;opacity:0;transition:opacity .45s ease;background:var(--sky)}
+.scene.on{opacity:1}
+.scene svg{display:block;width:100%;height:100%}
+.sbtn{position:absolute;top:10px;border:0;border-radius:999px;padding:6px 14px 4px;font:700 .95rem var(--display);cursor:pointer;background:rgba(255,255,255,.92);color:#1d2b22;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.sbtn.back{left:10px}.sbtn.again{right:10px}
+
+.talk{display:flex;align-items:flex-start;gap:10px;margin-top:12px;min-height:84px}
+.mascot{flex:0 0 70px;width:70px;height:78px}
+.bubble{position:relative;flex:1;min-width:0;background:var(--paper);border:2px solid var(--line);border-radius:18px;padding:10px 16px;font-weight:700;font-size:1.06rem;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.bubble::before{content:"";position:absolute;left:-10px;top:22px;width:16px;height:16px;background:var(--paper);border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg)}
+.bubble.pop{animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}}
+.bubble .go{margin-top:8px;border:0;background:var(--sun);color:#2a2005;font:800 1rem var(--display);border-radius:999px;padding:6px 16px 3px;cursor:pointer}
+.stars{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--muted);font-size:.95rem;flex-wrap:wrap}
+.stars .st{display:flex;gap:3px}
+.stars .st span{font-size:1.15rem;color:var(--line);transition:color .3s,transform .3s}
+.stars .st span.on{color:var(--sun);transform:scale(1.15)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:.88rem;font-weight:700;cursor:pointer}
+.chip.seen{border-color:var(--good);color:var(--good)}
+.chip.active{background:var(--sun-soft);border-color:var(--sun);color:var(--ink)}
+
+.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);background:var(--paper);border:2px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;max-height:calc(100vh - 28px);display:flex;flex-direction:column}
+.pbody{padding:18px 20px 20px;overflow-y:auto;min-height:0}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.panel h2{font-family:var(--display);font-size:1.85rem;line-height:1.05;margin:4px 0 6px;color:var(--leaf);text-wrap:balance}
+.content > *{animation:rise .5s both cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.content p{margin:10px 0 0}
+.content strong{color:var(--leaf)}
+.box{margin-top:14px;border-radius:14px;padding:10px 14px;font-size:.95rem}
+.box h3{margin:0 0 4px;font-family:var(--display);font-size:1.05rem}
+.box ul{margin:0;padding-left:20px}
+.box.key{background:var(--leaf-soft)} .box.key h3{color:var(--leaf)}
+.box.fun{background:var(--sun-soft)} .box.fun h3{color:var(--ink)}
+.box.teach{border:2px dashed var(--berry)} .box.teach h3{color:var(--berry)}
+body:not(.docente) .box.fun,body:not(.docente) .box.teach{display:none}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-top:2px solid var(--line)}
+.nav button{font:700 .95rem var(--display);border-radius:999px;border:2px solid var(--leaf);background:transparent;color:var(--leaf);padding:5px 13px 2px;cursor:pointer}
+.nav button.primary{background:var(--leaf);color:var(--paper)}
+.nav button.on{background:var(--sun);border-color:var(--sun);color:#2a2005}
+.nav .count{margin-left:auto;font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.timer{height:4px;background:var(--sun);width:0}
+.timer.run{animation:tm linear forwards}
+@keyframes tm{to{width:100%}}
+
+/* Juegos */
+.games h2{font-family:var(--display);color:var(--leaf);font-size:2rem;margin:0 0 4px}
+.gmenu{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px}
+.gcard{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:14px;cursor:pointer;color:var(--ink);box-shadow:var(--shadow);transition:transform .2s,border-color .2s}
+.gcard:hover{transform:translateY(-3px);border-color:var(--sun)}
+.gcard svg{width:100%;height:110px;border-radius:14px;background:var(--leaf-soft)}
+.gcard b{font:800 1.25rem var(--display);color:var(--leaf)}
+.gcard span{color:var(--muted);font-size:.92rem}
+.garea{background:var(--paper);border:2px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:16px;margin-top:14px}
+.ghead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ghead h3{font:800 1.5rem var(--display);color:var(--leaf);margin:0}
+.ghead .meta{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.gbtn{border:2px solid var(--leaf);background:transparent;color:var(--leaf);font:700 1rem var(--display);border-radius:999px;padding:5px 14px 2px;cursor:pointer}
+.gbtn.primary{background:var(--leaf);color:var(--paper)}
+.gbtn.sunny{background:var(--sun);border-color:var(--sun);color:#2a2005}
+.tip{color:var(--muted);margin:0 0 10px}
+.fb{min-height:1.6em;font-weight:800;margin:10px 0 0}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)}
+.tray{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0}
+.card{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:8px 14px;font-weight:800;cursor:grab;font-size:1rem;user-select:none;transition:transform .15s,border-color .15s,background .15s}
+.card.sel{border-color:var(--sun);background:var(--sun-soft);transform:translateY(-3px) scale(1.04)}
+.card.done{border-color:var(--good);color:var(--good);cursor:default}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.lstage{position:relative;width:min(100%,460px);aspect-ratio:1;margin:0 auto;border-radius:18px;overflow:hidden;background:var(--sky)}
+.lstage svg{display:block;width:100%;height:100%}
+.target{position:absolute;transform:translate(-50%,-50%);min-width:96px;min-height:36px;border:3px dashed #ffffff;background:rgba(255,255,255,.55);color:#1d2b22;border-radius:12px;font:800 .95rem var(--display);padding:4px 8px 1px;cursor:pointer}
+.target.ok{border-style:solid;border-color:var(--good);background:#e6f7ea;color:#1f6b38}
+.target.no{border-color:var(--bad);background:#fde6e4}
+.bins{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.bin{border:3px dashed var(--line);border-radius:16px;padding:10px;min-height:130px;background:var(--leaf-soft);cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.bin h4{margin:0;font:800 1.1rem var(--display);color:var(--leaf);text-align:center}
+.bin .in{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.bin.hover{border-color:var(--sun)}
+.bin.no{border-color:var(--bad)}
+.slots{display:grid;gap:8px;counter-reset:s;margin:10px 0}
+.slot{display:flex;gap:10px;align-items:center;border:2px dashed var(--line);border-radius:14px;padding:8px 12px;min-height:50px;font-weight:700}
+.slot::before{counter-increment:s;content:counter(s);flex:0 0 32px;height:32px;border-radius:50%;background:var(--leaf-soft);color:var(--leaf);display:grid;place-items:center;font:800 1.1rem var(--display)}
+.slot.ok{border-style:solid;border-color:var(--good);background:var(--leaf-soft)}
+.qbox{max-width:640px;margin:0 auto}
+.qbox .q{font:800 1.35rem var(--display);margin:6px 0 12px;text-wrap:balance}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:10px 14px;font-weight:800;font-size:1.02rem;cursor:pointer}
+.opt:hover{border-color:var(--sun)}
+.opt.ok{border-color:var(--good);background:#e6f7ea;color:#1f6b38}
+.opt.no{border-color:var(--bad);background:#fde6e4;color:#8b1d16}
+.expl{margin-top:10px;background:var(--leaf-soft);border-radius:12px;padding:10px 14px}
+.leafview{width:min(100%,300px);aspect-ratio:1;margin:0 auto 10px;border-radius:18px;overflow:hidden;background:#eaf6e4}
+.leafview svg{width:100%;height:100%;display:block}
+.end{text-align:center;padding:16px 0}
+.end .big{font-size:3rem;letter-spacing:6px}
+.end h3{font:800 2rem var(--display);color:var(--leaf);margin:6px 0}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:3px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .panel{position:static;max-height:none}
+  .sbtn{font-size:.85rem;padding:5px 11px 3px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Plantas en acción</h1>
+      <p class="sub">Toca las partes que brillan y mira lo que pasa dentro de la planta.</p>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <label class="toggle"><input type="checkbox" id="badges" checked> Números</label>
+      
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="grid" id="explora">
+    <div class="col">
+      <div class="stage" id="stage">
+        <div id="mainHost" style="width:100%;height:100%"></div>
+        <div class="scene" id="scene" hidden>
+          <div id="sceneSvg" style="width:100%;height:100%"></div>
+          <button class="sbtn back" id="back">← Volver</button>
+          <button class="sbtn again" id="again">↻ Otra vez</button>
+        </div>
+      </div>
+      <div class="talk">
+        <svg class="mascot" viewBox="0 0 70 78" aria-hidden="true">
+          <g><animateTransform attributeName="transform" type="rotate" values="-6 35 26;6 35 26;-6 35 26" dur="2.4s" repeatCount="indefinite"/>
+            <path d="M35 26 C35 18 35 12 35 6" stroke="#3f8f3f" stroke-width="3" fill="none"/>
+            <path d="M35 10 C28 4 20 4 16 8 C22 14 30 14 35 10Z" fill="#56b35a"/>
+            <path d="M35 8 C42 1 50 2 54 6 C48 12 40 12 35 8Z" fill="#56b35a"/></g>
+          <ellipse cx="35" cy="50" rx="27" ry="24" fill="#e9c58c" stroke="#a7783a" stroke-width="3"/>
+          <ellipse cx="25" cy="47" rx="3.5" ry="4.5" fill="#2b1d0e"><animate attributeName="ry" values="4.5;4.5;.5;4.5" keyTimes="0;.9;.95;1" dur="4s" repeatCount="indefinite"/></ellipse>
+          <ellipse cx="44" cy="47" rx="3.5" ry="4.5" fill="#2b1d0e"><animate attributeName="ry" values="4.5;4.5;.5;4.5" keyTimes="0;.9;.95;1" dur="4s" repeatCount="indefinite"/></ellipse>
+          <path d="M27 58 Q35 64 43 58" stroke="#2b1d0e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle cx="19" cy="56" r="4" fill="#f2a08a" opacity=".7"/><circle cx="51" cy="56" r="4" fill="#f2a08a" opacity=".7"/>
+        </svg>
+        <div class="bubble" id="bubble" aria-live="polite"></div>
+      </div>
+      <div class="stars"><span id="starTxt"></span><span class="st" id="starRow"></span></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <aside class="panel">
+      <div class="timer" id="timer"></div>
+      <div class="pbody" id="pbody"></div>
+      <div class="nav">
+        <button id="prev">‹ Anterior</button>
+        <button id="next" class="primary">Siguiente ›</button>
+        <button id="auto">▶ Recorrido</button>
+        <span class="count" id="count"></span>
+      </div>
+    </aside>
+  </section>
+
+  <section class="games" id="juegos" hidden>
+    <h2>¡A practicar!</h2>
+    <p class="sub">Elige un juego. Puedes tocar una tarjeta y luego su sitio, o arrastrarla.</p>
+    <div class="gmenu" id="gmenu"></div>
+    <div class="garea" id="garea" hidden></div>
+  </section>
+</div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+/* ================= Ayudas de dibujo ================= */
+let ID="u0",UID=0;
+const C={leaf:"#56b35a",leafD:"#2e7d32",stem:"#3f8f3f",water:"#2f8fe6",sap:"#5fc43c",root:"#f0dcb0",sun:"#ffd23f",ink:"#1d2b22"};
+const RAD=Math.PI/180;
+const A={
+ fade:(b,d=.6)=>`<animate attributeName="opacity" from="0" to="1" begin="${b}s" dur="${d}s" fill="freeze"/>`,
+ out:(b,d=.6)=>`<animate attributeName="opacity" from="1" to="0" begin="${b}s" dur="${d}s" fill="freeze"/>`,
+ draw:(b,d=1.2)=>`<animate attributeName="stroke-dashoffset" from="1" to="0" begin="${b}s" dur="${d}s" fill="freeze"/>`,
+ grow:(b,d=.8)=>`<animateTransform attributeName="transform" type="scale" from="0" to="1" begin="${b}s" dur="${d}s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .8 .3 1"/>`,
+ sway:(x,y,a=3,d=3.5)=>`<animateTransform attributeName="transform" type="rotate" values="${-a} ${x} ${y};${a} ${x} ${y};${-a} ${x} ${y}" dur="${d}s" repeatCount="indefinite"/>`,
+ pulse:(d=1.4,lo=.55)=>`<animate attributeName="opacity" values="1;${lo};1" dur="${d}s" repeatCount="indefinite"/>`,
+ bob:(a=4,d=2)=>`<animateTransform attributeName="transform" type="translate" values="0 0;0 ${-a};0 0" dur="${d}s" repeatCount="indefinite" additive="sum"/>`
+};
+const F=(s,b,d=.6)=>`<g opacity="0">${A.fade(b,d)}${s}</g>`;
+const FO=(s,b,d=.6)=>`<g>${A.out(b,d)}${s}</g>`;
+const GA=(x,y,s,b,d=.8)=>`<g transform="translate(${x} ${y})"><g transform="scale(0)">${A.grow(b,d)}<g transform="translate(${-x} ${-y})">${s}</g></g></g>`;
+const GY=(x,y,s,b,d=1.2)=>`<g transform="translate(${x} ${y})"><g transform="scale(1 0)"><animateTransform attributeName="transform" type="scale" from="1 0" to="1 1" begin="${b}s" dur="${d}s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .8 .3 1"/><g transform="translate(${-x} ${-y})">${s}</g></g></g>`;
+const D=(d,b,dur,stroke,w,extra="")=>`<path d="${d}" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${A.draw(b,dur)}</path>`;
+const PS=(d,stroke,w)=>`<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`;
+const T=(x,y,s,b=null,o={})=>{const el=`<text x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||17}" font-weight="800" fill="${o.f||C.ink}" stroke="${o.st||'#fff'}" stroke-width="${o.sw||5}" stroke-linejoin="round" paint-order="stroke" style="font-family:var(--display)">${s}</text>`;return b==null?el:F(el,b)};
+function leafP(len,wd=.38){return `M0 0 C${len*.3} ${-len*wd} ${len*.75} ${-len*wd*.85} ${len} 0 C${len*.75} ${len*wd*.85} ${len*.3} ${len*wd} 0 0Z`}
+function leafAbs(cx,cy,len,ang,wd=.38){const c=Math.cos(ang*RAD),s=Math.sin(ang*RAD),P=(x,y)=>`${(cx+x*c-y*s).toFixed(1)} ${(cy+x*s+y*c).toFixed(1)}`;return `M${P(0,0)} C${P(len*.3,-len*wd)} ${P(len*.75,-len*wd*.85)} ${P(len,0)} C${P(len*.75,len*wd*.85)} ${P(len*.3,len*wd)} ${P(0,0)}Z`}
+function rotP(cx,cy,ang){const c=Math.cos(ang*RAD),s=Math.sin(ang*RAD);return (x,y)=>[cx+x*c-y*s,cy+x*s+y*c]}
+function leaf(x,y,len,ang,o={}){return `<g transform="translate(${x} ${y}) rotate(${ang})"><path d="${leafP(len,o.wd||.38)}" fill="${o.fill||C.leaf}" stroke="${o.stroke||C.leafD}" stroke-width="1.6"/><path d="M2 0 L${len*.9} 0" stroke="${o.stroke||C.leafD}" stroke-width="1.3" opacity=".55"/></g>`}
+function defs(extra=""){return `<defs><filter id="${ID}gl" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ffd23f" flood-opacity="1"/></filter>${extra}</defs>`}
+function bg(g,o={}){const n=o.night;return defs(`<linearGradient id="${ID}sk" gradientUnits="userSpaceOnUse" x1="0" y1="-150" x2="0" y2="${g}"><stop offset="0" stop-color="${n?'#0b1534':'#79c4f1'}"/><stop offset="1" stop-color="${n?'#2c3f73':'#e2f4fd'}"/></linearGradient><linearGradient id="${ID}so" gradientUnits="userSpaceOnUse" x1="0" y1="${g}" x2="0" y2="${g+320}"><stop offset="0" stop-color="#93603a"/><stop offset="1" stop-color="#583720"/></linearGradient>`)+`<rect x="-1200" y="-1200" width="3200" height="${1200+g}" fill="url(#${ID}sk)"/><rect x="-1200" y="${g}" width="3200" height="2400" fill="url(#${ID}so)"/><rect x="-1200" y="${g-5}" width="3200" height="10" fill="#5fae4f"/>`}
+function paper(c="#eaf6e4"){return defs()+`<rect x="-1200" y="-1200" width="3200" height="3200" fill="${c}"/>`}
+function grid(){let s="";for(let i=-400;i<=800;i+=40){s+=`<line x1="${i}" y1="-600" x2="${i}" y2="1000" stroke="#cfe5c6" stroke-width="1"/><line x1="-600" y1="${i}" x2="1000" y2="${i}" stroke="#cfe5c6" stroke-width="1"/>`}return s}
+function pebbles(g,xs=[[40,40],[330,70],[120,110],[280,150],[60,175],[380,30],[-40,90],[440,120]]){return xs.map(([x,y])=>`<ellipse cx="${x}" cy="${g+y}" rx="9" ry="6" fill="#7b5233"/>`).join("")}
+function sun(x,y,r=26){let rays="";for(let i=0;i<12;i++)rays+=`<line x1="0" y1="${-r-6}" x2="0" y2="${-r-18}" stroke="${C.sun}" stroke-width="4" stroke-linecap="round" transform="rotate(${i*30})"/>`;return `<g transform="translate(${x} ${y})"><g>${rays}<animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="18s" repeatCount="indefinite"/></g><circle r="${r}" fill="${C.sun}" stroke="#f0a500" stroke-width="3"/><circle cx="-8" cy="-4" r="2.5" fill="#7a5300"/><circle cx="8" cy="-4" r="2.5" fill="#7a5300"/><path d="M-8 6 Q0 12 8 6" stroke="#7a5300" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>`}
+function moon(x,y,bgc="#13214a"){return `<g transform="translate(${x} ${y})"><circle r="24" fill="#f6f1cf"/><circle cx="11" cy="-7" r="22" fill="${bgc}"/></g>`}
+function stars(pts){return pts.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="2.2" fill="#fff"><animate attributeName="opacity" values="1;.2;1" dur="${2+i%3}s" repeatCount="indefinite"/></circle>`).join("")}
+function cloud(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="0" rx="34" ry="16" fill="#fff"/><circle cx="-14" cy="-8" r="14" fill="#fff"/><circle cx="10" cy="-12" r="17" fill="#fff"/></g>`}
+function drift(s,dx=40,d=14){return `<g>${`<animateTransform attributeName="transform" type="translate" values="0 0;${dx} 0;0 0" dur="${d}s" repeatCount="indefinite"/>`}${s}</g>`}
+function wind(y0=70,b=0){let s="";[[y0,0],[y0+40,.8],[y0+80,1.6]].forEach(([y,o])=>s+=`<path d="M-70 ${y} q30 -10 60 0 t60 0" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0"><animateTransform attributeName="transform" type="translate" from="0 0" to="520 0" dur="2.4s" begin="${b+o}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.95;.95;0" dur="2.4s" begin="${b+o}s" repeatCount="indefinite"/></path>`);return s}
+const DROP=`<path d="M0 -8 C4 -3 6 1 6 3.5 A6 6 0 0 1 -6 3.5 C-6 1 -4 -3 0 -8Z" fill="${C.water}" stroke="#1b6fbd" stroke-width="1"/>`;
+const CO2=`<g><circle r="13" fill="#97a3ab"/><circle cx="-12" cy="4" r="9" fill="#97a3ab"/><circle cx="12" cy="4" r="9" fill="#97a3ab"/><text y="5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff" style="font-family:var(--display)">CO₂</text></g>`;
+const O2=`<g><circle r="13" fill="#e4f2ff" stroke="${C.water}" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="11" font-weight="800" fill="#1f5fa8" style="font-family:var(--display)">O₂</text></g>`;
+const DOT=(c,r=4.5)=>`<circle r="${r}" fill="${c}" stroke="#fff" stroke-width="1.2"/>`;
+const SUGAR=`<rect x="-8" y="-8" width="16" height="16" rx="3" fill="#fff1c7" stroke="#c9a14b" stroke-width="2"/>`;
+const BOLT=`<path d="M5 -20 L-10 4 L0 4 L-5 20 L12 -5 L2 -5Z" fill="#ffc53d" stroke="#c98500" stroke-width="2" stroke-linejoin="round"/>`;
+const POLLEN=`<circle r="3.2" fill="#ffd21f" stroke="#c99a10" stroke-width="1"/>`;
+function flow(path,shape,{n=5,dur=3,begin=0,rep="indefinite"}={}){let s="";for(let i=0;i<n;i++){const b=(begin+i*dur/n).toFixed(2);s+=`<g opacity="0"><animateMotion path="${path}" dur="${dur}s" begin="${b}s" repeatCount="${rep}"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.82;1" dur="${dur}s" begin="${b}s" repeatCount="${rep}"/>${shape}</g>`}return s}
+function arrowHead(x,y,ang,c,sz=9){const p=rotP(x,y,ang);const a=p(0,0),b=p(-sz,-sz*.7),d=p(-sz,sz*.7);return `<path d="M${a} L${b} L${d}Z" fill="${c}"/>`}
+function line(x1,y1,x2,y2,c="#1d2b22",w=2.5,dash=""){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:""}/>`}
+
+/* ---- Plantas y objetos ---- */
+function sunflower(x,y,r){let p="";for(let i=0;i<14;i++)p+=`<ellipse cx="0" cy="${-r}" rx="${r*.32}" ry="${r*.62}" fill="#ffc928" stroke="#e39b00" stroke-width="1.2" transform="rotate(${i*360/14})"/>`;return `<g transform="translate(${x} ${y})">${p}<circle r="${r*.64}" fill="#7a4a21"/><circle r="${r*.42}" fill="#5d3616"/></g>`}
+function daisy(x,y,r=16){let p="";for(let i=0;i<10;i++)p+=`<ellipse cx="0" cy="${-r*.8}" rx="${r*.28}" ry="${r*.6}" fill="#fff" stroke="#d9d9d9" transform="rotate(${i*36})"/>`;return `<g transform="translate(${x} ${y})">${p}<circle r="${r*.38}" fill="#ffc928" stroke="#e39b00"/></g>`}
+function plantParts(x,g,h,o={}){const top=g-h;const stem=`<path d="M${x} ${g} C${x+8} ${g-h*.4} ${x-8} ${g-h*.7} ${x} ${top}" stroke="${C.stem}" stroke-width="${o.sw||7}" fill="none" stroke-linecap="round"/>`;let leaves="";(o.leaves||[.35,.55,.75]).forEach((f,i)=>{leaves+=leaf(x,g-h*f,o.ll||58,i%2?205:-25)});const flower=o.flower===false?"":(o.daisy?daisy(x,top,o.fr||18):sunflower(x,top,o.fr||22));return {stem,leaves,flower}}
+function plant(x,g,h,o={}){const p=plantParts(x,g,h,o);const s=p.stem+p.leaves+p.flower;return o.sway===false?s:`<g>${A.sway(x,g,o.sa||2.5,o.sd||3.5)}${s}</g>`}
+function rootsMain(x,g,b=0,s=1,anim=true,w=1){const ps=[`M${x} ${g} C${x+2} ${g+40*s} ${x-3} ${g+80*s} ${x} ${g+125*s}`,`M${x} ${g+22*s} C${x-20*s} ${g+32*s} ${x-42*s} ${g+44*s} ${x-62*s} ${g+70*s}`,`M${x} ${g+30*s} C${x+25*s} ${g+40*s} ${x+46*s} ${g+55*s} ${x+64*s} ${g+82*s}`,`M${x} ${g+62*s} C${x-15*s} ${g+72*s} ${x-30*s} ${g+88*s} ${x-42*s} ${g+112*s}`,`M${x} ${g+72*s} C${x+15*s} ${g+82*s} ${x+28*s} ${g+96*s} ${x+38*s} ${g+120*s}`,`M${x-30*s} ${g+48*s} C${x-36*s} ${g+60*s} ${x-34*s} ${g+70*s} ${x-30*s} ${g+80*s}`,`M${x+32*s} ${g+50*s} C${x+38*s} ${g+64*s} ${x+36*s} ${g+74*s} ${x+30*s} ${g+86*s}`];return ps.map((p,i)=>{const sw=(i?(i>4?2:3.5):7*w)*Math.max(.7,s*.9);return anim?D(p,b+(i?0.5+i*.22:0),1.2,C.root,sw):PS(p,C.root,sw)}).join("")}
+function rootsFasc(x,g,b=0,s=1,anim=true){let o="";for(let i=0;i<11;i++){const dx=(i-5)*11*s,ex=x+dx*2.2+((i*37)%9-4)*3*s,ey=g+(80+((i*53)%40))*s;const p=`M${x+(i-5)*2*s} ${g} C${x+dx*.6} ${g+30*s} ${ex-dx*.3} ${g+55*s} ${ex} ${ey}`;o+=anim?D(p,b+i*.12,1.3,C.root,2.6):PS(p,C.root,2.2)}return o}
+function dandelion(x,g,s=1){let o="";[[200,62],[225,52],[-20,62],[-45,52],[185,40],[-5,40]].forEach(([a,l])=>o+=leaf(x,g-3,l*s,a,{wd:.24,fill:"#4fa84a"}));o+=`<path d="M${x} ${g} Q${x+6*s} ${g-60*s} ${x} ${g-115*s}" stroke="#5aa54a" stroke-width="${4*s}" fill="none"/>`;let p="";for(let i=0;i<18;i++)p+=`<line x1="0" y1="0" x2="0" y2="${-15*s}" stroke="#ffcf1f" stroke-width="${4*s}" stroke-linecap="round" transform="rotate(${i*20})"/>`;return o+`<g transform="translate(${x} ${g-118*s})">${p}<circle r="${6*s}" fill="#f2b705"/></g>`}
+function wheat(x,g,s=1){let o="";[-14,-7,0,7,14].forEach((d,i)=>{const h=(95+(i%2)*20)*s;o+=`<path d="M${x+d*.3*s} ${g} Q${x+d*s} ${g-h*.5} ${x+d*1.8*s} ${g-h}" stroke="#7fb24a" stroke-width="${3*s}" fill="none" stroke-linecap="round"/>`});[-12,0,12].forEach((d,i)=>{const tx=x+d*1.6*s,ty=g-(125+(i%2)*10)*s;let e="";for(let k=0;k<5;k++)e+=`<ellipse cx="${(k%2?4:-4)*s}" cy="${-k*7*s}" rx="${4*s}" ry="${6*s}" fill="#e3b94f" stroke="#b88b2a"/>`;o+=`<path d="M${x+d*.2*s} ${g} Q${x+d*s} ${g-70*s} ${tx} ${ty}" stroke="#a9b950" stroke-width="${2.5*s}" fill="none"/><g transform="translate(${tx} ${ty})">${e}</g>`});return o}
+function herb(x,g,h,s=1,c="#63bb55"){let o=`<path d="M${x} ${g} Q${x+8*s} ${g-h/2} ${x} ${g-h}" stroke="${c}" stroke-width="${3.2*s}" fill="none" stroke-linecap="round"/>`;for(let k=1;k<5;k++){o+=leaf(x+(k%2?2:-2),g-h*k/5,19*s,k%2?-35:215,{fill:c,wd:.36})}return o+leaf(x,g-h,17*s,-90,{fill:c,wd:.36})}
+function canopy(x,y,r){return [[0,0,1],[-.62,.22,.7],[.62,.25,.7],[-.3,-.48,.66],[.36,-.42,.66]].map(([dx,dy,k],i)=>`<circle cx="${x+dx*r}" cy="${y+dy*r}" r="${r*k}" fill="${i%2?'#4a9c45':'#3f8d3c'}"/>`).join("")+`<circle cx="${x-.25*r}" cy="${y-.25*r}" r="${r*.33}" fill="#62b358" opacity=".6"/>`}
+function trunk(x,g,h,s=1){return `<path d="M${x-12*s} ${g} L${x-8*s} ${g-h} L${x+8*s} ${g-h} L${x+12*s} ${g}Z" fill="#8a5a33" stroke="#6a4225" stroke-width="2"/><path d="M${x} ${g-h*.7} L${x-30*s} ${g-h*.95} M${x} ${g-h*.8} L${x+32*s} ${g-h*1.02}" stroke="#7a4e2b" stroke-width="${6*s}" stroke-linecap="round"/>`}
+function tree(x,g,h=150,s=1){return trunk(x,g,h,s)+canopy(x,g-h-25*s,70*s)}
+function shrubParts(x,g,s=1){return {t:`<path d="M${x-5*s} ${g} L${x-3*s} ${g-18*s} M${x+4*s} ${g} L${x+3*s} ${g-18*s} M${x} ${g-12*s} L${x-30*s} ${g-30*s} M${x} ${g-10*s} L${x+30*s} ${g-30*s}" stroke="#7a4e2b" stroke-width="${5*s}" stroke-linecap="round"/>`,c:[[0,-44,28],[-32,-32,22],[32,-32,22],[-15,-58,21],[18,-58,21]].map(([dx,dy,r],i)=>`<circle cx="${x+dx*s}" cy="${g+dy*s}" r="${r*s}" fill="${i%2?'#4a9c45':'#3f8d3c'}"/>`).join("")}}
+function shrub(x,g,s=1){const p=shrubParts(x,g,s);return p.c+p.t}
+function carrotLeaves(x,g,s=1){let o="";[-20,-8,5,18].forEach((d,i)=>{const h=(55+i%2*12)*s;o+=`<path d="M${x} ${g} Q${x+d*.6*s} ${g-30*s} ${x+d*1.6*s} ${g-h}" stroke="#4f9d3a" stroke-width="${2.5*s}" fill="none"/>`;[.45,.7,1].forEach(t=>o+=`<circle cx="${x+d*1.6*s*t}" cy="${g-h*t}" r="${6*s}" fill="#5cb04a"/>`)});return o}
+function carrotRoot(x,g,s=1){return `<path d="M${x-17*s} ${g-2} C${x-17*s} ${g+50*s} ${x-4*s} ${g+105*s} ${x} ${g+128*s} C${x+4*s} ${g+105*s} ${x+17*s} ${g+50*s} ${x+17*s} ${g-2}Z" fill="#f08a24" stroke="#c96a12" stroke-width="2"/>`+[25,50,75].map(y=>`<path d="M${x-12*s+y*.07*s} ${g+y*s} l${9*s} 2" stroke="#c96a12" stroke-width="2"/>`).join("")}
+function beet(x,g,s=1){return [[-25,60],[0,70],[25,60]].map(([d,h])=>`<path d="M${x} ${g} Q${x+d*.5*s} ${g-h*.5*s} ${x+d*s} ${g-h*s}" stroke="#b02c5a" stroke-width="${2.5*s}" fill="none"/>`+leaf(x+d*s,g-h*s,26*s,-90+d,{fill:"#3f8f3f",wd:.45})).join("")+`<path d="M${x-28*s} ${g+18*s} C${x-28*s} ${g-6*s} ${x+28*s} ${g-6*s} ${x+28*s} ${g+18*s} C${x+28*s} ${g+40*s} ${x+6*s} ${g+48*s} ${x} ${g+70*s} C${x-6*s} ${g+48*s} ${x-28*s} ${g+40*s} ${x-28*s} ${g+18*s}Z" fill="#8e1f4f" stroke="#5f1033" stroke-width="2"/>`}
+function rabbit(x,g,s=1){return `<g><ellipse cx="${x-28*s}" cy="${g-26*s}" rx="${8*s}" ry="${8*s}" fill="#fff"/><ellipse cx="${x}" cy="${g-22*s}" rx="${30*s}" ry="${22*s}" fill="#d8cbbd" stroke="#a9998a" stroke-width="2"/><ellipse cx="${x+20*s}" cy="${g-72*s}" rx="${6*s}" ry="${20*s}" fill="#d8cbbd" stroke="#a9998a" stroke-width="2" transform="rotate(-12 ${x+20*s} ${g-72*s})"/><ellipse cx="${x+33*s}" cy="${g-70*s}" rx="${6*s}" ry="${19*s}" fill="#d8cbbd" stroke="#a9998a" stroke-width="2" transform="rotate(14 ${x+33*s} ${g-70*s})"/><circle cx="${x+27*s}" cy="${g-42*s}" r="${17*s}" fill="#d8cbbd" stroke="#a9998a" stroke-width="2"/><circle cx="${x+33*s}" cy="${g-46*s}" r="${2.6*s}" fill="#222"/><circle cx="${x+43*s}" cy="${g-40*s}" r="${2.6*s}" fill="#f09ab0"/><ellipse cx="${x-8*s}" cy="${g-2*s}" rx="${12*s}" ry="${4*s}" fill="#c4b6a7"/></g>`}
+function bee(){return `<g><ellipse cx="-3" cy="-14" rx="9" ry="6" fill="#fff" opacity=".9"><animate attributeName="ry" values="6;2;6" dur=".16s" repeatCount="indefinite"/></ellipse><ellipse cx="6" cy="-13" rx="7" ry="5" fill="#fff" opacity=".85"><animate attributeName="ry" values="5;1.5;5" dur=".16s" repeatCount="indefinite"/></ellipse><ellipse rx="15" ry="10" fill="#ffcc33" stroke="#333" stroke-width="1.5"/><path d="M-5 -9 L-5 9 M3 -9.5 L3 9.5" stroke="#333" stroke-width="3.5"/><circle cx="14" cy="-1" r="6" fill="#333"/><circle cx="16" cy="-3" r="1.6" fill="#fff"/><path d="M-15 0 L-21 0" stroke="#333" stroke-width="2"/></g>`}
+function sign(x,y,g,txt){const L=txt.split("|");return `<rect x="${x-4}" y="${y}" width="8" height="${g-y}" fill="#8a5a33"/><rect x="${x-56}" y="${y-30}" width="112" height="${L.length>1?50:38}" rx="9" fill="#f6dda5" stroke="#a87638" stroke-width="3"/>`+L.map((l,i)=>`<text x="${x}" y="${y-8+i*18}" text-anchor="middle" font-size="14.5" font-weight="800" fill="#5a3a12" style="font-family:var(--display)">${l}</text>`).join("")}
+function magnifier(x,y,r,inner,clipId){return `<line x1="${x+r*.72}" y1="${y+r*.72}" x2="${x+r*1.25}" y2="${y+r*1.25}" stroke="#5a5a5a" stroke-width="${r*.22}" stroke-linecap="round"/><clipPath id="${clipId}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath><circle cx="${x}" cy="${y}" r="${r}" fill="#effae9"/><g clip-path="url(#${clipId})">${inner}</g><circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#5a5a5a" stroke-width="${r*.12}"/><path d="M${x-r*.55} ${y-r*.3} A${r*.65} ${r*.65} 0 0 1 ${x-r*.15} ${y-r*.62}" stroke="#fff" stroke-width="${r*.08}" fill="none" opacity=".8"/>`}
+function cells(x,y,r){let s="";for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++){const cx=x+i*34+(j%2?17:0),cy=y+j*28;s+=`<rect x="${cx-15}" y="${cy-12}" width="30" height="24" rx="6" fill="#c9eeb6" stroke="#8cc77a" stroke-width="1.5"/>`;[[-7,-4],[6,-3],[-1,5]].forEach(([a,b],k)=>s+=`<ellipse cx="${cx+a}" cy="${cy+b}" rx="4.5" ry="3" fill="#2f9a3a">${A.pulse(1.2+((i+j+k)%3)*.3,.4)}</ellipse>`)}return s}
+
+/* Frutos y semillas */
+const apple=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#e23b3b" stroke="#a51f24" stroke-width="2"/><ellipse cx="${x-r*.35}" cy="${y-r*.35}" rx="${r*.22}" ry="${r*.14}" fill="#fff" opacity=".5"/><path d="M${x} ${y-r*.8} q2 -${r*.4} ${r*.15} -${r*.5}" stroke="#6b3e1c" stroke-width="3" fill="none"/>`+leaf(x+2,y-r*1.1,r*.6,-30,{wd:.4});
+const orange=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#ff9a1f" stroke="#d26f00" stroke-width="2"/>${[[-.3,-.2],[.2,.1],[-.1,.4],[.35,-.35]].map(([a,b])=>`<circle cx="${x+a*r}" cy="${y+b*r}" r="1.6" fill="#d26f00"/>`).join("")}`+leaf(x,y-r*.95,r*.55,-40,{wd:.4});
+const peach=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#ffb27a" stroke="#e07c45" stroke-width="2"/><circle cx="${x+r*.3}" cy="${y+r*.1}" r="${r*.55}" fill="#ff8a6a" opacity=".55"/><path d="M${x} ${y-r} Q${x-r*.3} ${y} ${x} ${y+r}" stroke="#e07c45" stroke-width="2" fill="none"/>`;
+const strawberry=(x,y,r)=>`<path d="M${x-r} ${y-r*.4} C${x-r} ${y+r*.6} ${x-r*.2} ${y+r*1.2} ${x} ${y+r*1.3} C${x+r*.2} ${y+r*1.2} ${x+r} ${y+r*.6} ${x+r} ${y-r*.4} C${x+r*.6} ${y-r*.9} ${x-r*.6} ${y-r*.9} ${x-r} ${y-r*.4}Z" fill="#e62e48" stroke="#a5122a" stroke-width="2"/>${[[-.5,0],[0,-.2],[.5,0],[-.3,.5],[.3,.5],[0,.9]].map(([a,b])=>`<ellipse cx="${x+a*r}" cy="${y+b*r}" rx="1.6" ry="2.4" fill="#ffe27a"/>`).join("")}<path d="M${x-r*.7} ${y-r*.6} L${x} ${y-r*.3} L${x+r*.7} ${y-r*.6} L${x} ${y-r*.95}Z" fill="#4caf50"/>`;
+const walnut=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#c08850" stroke="#8a5a2b" stroke-width="2"/><path d="M${x} ${y-r} L${x} ${y+r}" stroke="#8a5a2b" stroke-width="2"/><path d="M${x-r*.6} ${y-r*.4} q${r*.2} ${r*.2} 0 ${r*.4} M${x+r*.5} ${y-r*.5} q${-r*.2} ${r*.3} 0 ${r*.5} M${x-r*.4} ${y+r*.3} q${r*.2} ${r*.2} ${r*.1} ${r*.4}" stroke="#8a5a2b" stroke-width="1.6" fill="none"/>`;
+const almond=(x,y,r)=>`<path d="M${x-r} ${y} C${x-r*.6} ${y-r*.75} ${x+r*.6} ${y-r*.6} ${x+r*1.1} ${y} C${x+r*.6} ${y+r*.6} ${x-r*.6} ${y+r*.75} ${x-r} ${y}Z" fill="#c98b55" stroke="#8f5a2c" stroke-width="2"/><path d="M${x-r*.5} ${y-r*.15} L${x+r*.5} ${y-r*.15} M${x-r*.5} ${y+r*.15} L${x+r*.5} ${y+r*.15}" stroke="#8f5a2c" stroke-width="1.3"/>`;
+const hazelnut=(x,y,r)=>`<circle cx="${x}" cy="${y+r*.1}" r="${r}" fill="#9a6232" stroke="#6b3e1c" stroke-width="2"/><path d="M${x-r*.9} ${y-r*.3} Q${x} ${y-r*1.2} ${x+r*.9} ${y-r*.3} Q${x} ${y-r*.55} ${x-r*.9} ${y-r*.3}Z" fill="#d8b07a"/>`;
+const pipa=(x,y,r)=>`<path d="M${x} ${y-r*1.3} C${x+r*.8} ${y-r*.6} ${x+r*.7} ${y+r*.8} ${x} ${y+r*1.2} C${x-r*.7} ${y+r*.8} ${x-r*.8} ${y-r*.6} ${x} ${y-r*1.3}Z" fill="#2a2a2a" stroke="#000" stroke-width="1"/><path d="M${x-r*.3} ${y-r*.6} L${x-r*.25} ${y+r*.7} M${x+r*.3} ${y-r*.6} L${x+r*.25} ${y+r*.7}" stroke="#eee" stroke-width="1.8"/>`;
+const judia=(x,y,r)=>`<path d="M${x-r} ${y} C${x-r} ${y-r*.9} ${x+r} ${y-r*.9} ${x+r} ${y} C${x+r} ${y+r*.7} ${x+r*.2} ${y+r*.6} ${x} ${y+r*.3} C${x-r*.2} ${y+r*.6} ${x-r} ${y+r*.7} ${x-r} ${y}Z" fill="#f6efe2" stroke="#b8a888" stroke-width="2"/>`;
+const maiz=(x,y,r)=>`<path d="M${x-r*.8} ${y-r*.6} Q${x} ${y-r*1.1} ${x+r*.8} ${y-r*.6} Q${x+r*.7} ${y+r*.6} ${x} ${y+r} Q${x-r*.7} ${y+r*.6} ${x-r*.8} ${y-r*.6}Z" fill="#ffc928" stroke="#d99a00" stroke-width="2"/>`;
+const lenteja=(x,y,r)=>`<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*.7}" fill="#9c6b3c" stroke="#6b4422" stroke-width="2"/><ellipse cx="${x-r*.3}" cy="${y-r*.2}" rx="${r*.3}" ry="${r*.15}" fill="#fff" opacity=".35"/>`;
+const KIDNEY="M120 165 C118 95 228 70 292 120 C342 160 322 252 270 282 C220 312 118 300 114 240 C112 214 150 216 150 200 C150 186 121 190 120 165Z";
+function beanSection(o={}){const embryo=`<g><path d="M168 108 C150 120 146 150 160 172" stroke="#4e9d3c" stroke-width="7" fill="none" stroke-linecap="round"/>${leaf(168,108,22,-60,{fill:"#6cc04a",wd:.45})}${leaf(168,108,20,-130,{fill:"#6cc04a",wd:.45})}</g>`;return {coat:`<ellipse cx="200" cy="200" rx="98" ry="128" fill="#f4e5c3" stroke="#8b5a2b" stroke-width="10"/><path d="M200 78 C230 140 230 260 200 324" stroke="#d9c39a" stroke-width="3" fill="none"/>`,embryo}}
+
+/* Flor */
+function flowerParts(o={}){
+ const stem=`<path d="M200 296 C204 340 196 390 200 450" stroke="${C.stem}" stroke-width="10" fill="none" stroke-linecap="round"/>`+leaf(200,375,62,-30)+leaf(200,398,56,205);
+ const caliz=leaf(200,298,54,200,{fill:"#4f9d45",wd:.3})+leaf(200,298,54,-20,{fill:"#4f9d45",wd:.3});
+ const pet=(a,i)=>{const body=`<path d="${leafP(115,.4)}" fill="#f7a3c4" stroke="#d9608f" stroke-width="2"/><path d="M6 0 L100 0" stroke="#e57aa5" stroke-width="1.5"/>`;if(o.open!=null)return `<g transform="translate(200 292)"><g transform="rotate(-90)"><animateTransform attributeName="transform" type="rotate" from="-90" to="${a}" begin="${o.open+i*.12}s" dur="1.4s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .8 .3 1"/>${body}</g></g>`;return `<g transform="translate(200 292) rotate(${a})">${body}</g>`};
+ const corola=[-90,-158,-128,-52,-22].map(pet).join("");
+ const ANTH=[[165,175],[180,162],[220,162],[235,175]];
+ const estambres=ANTH.map(([x,y])=>`<path d="M200 286 Q${(200+x)/2} ${y+55} ${x} ${y+6}" stroke="#d8b84a" stroke-width="3" fill="none"/><ellipse cx="${x}" cy="${y}" rx="6.5" ry="11" fill="#f2c230" stroke="#c99a10" stroke-width="2" transform="rotate(${(x-200)*.8} ${x} ${y})"/>`).join("");
+ const estilo=`<rect x="196" y="160" width="8" height="95" rx="4" fill="#64b548" stroke="#3d7f2a" stroke-width="1.5"/><ellipse cx="200" cy="155" rx="12" ry="9" fill="#5aa83f" stroke="#3d7f2a" stroke-width="2"/>`;
+ const ovario=`<ellipse cx="200" cy="270" rx="18" ry="23" fill="#6cc04a" stroke="#3d7f2a" stroke-width="2"/>`;
+ return {stem,caliz,corola,estambres,estilo,ovario,ANTH};
+}
+
+/* Formas y bordes de hojas (espacio 400×400) */
+const SHAPES={
+ redondeada:{d:["M200 292 C108 294 104 150 200 138 C296 150 292 294 200 292Z"],pet:"M200 292 L200 345",ej:"álamo temblón"},
+ ovalada:{d:["M200 292 C134 276 128 146 200 92 C272 146 266 276 200 292Z"],pet:"M200 292 L200 345",ej:"naranjo"},
+ triangular:{d:["M200 92 C232 158 270 228 298 284 C240 302 160 302 102 284 C130 228 168 158 200 92Z"],pet:"M200 296 L200 345",ej:"chopo"},
+ palmeada:{d:[-165,-128,-90,-52,-15].map((a,i)=>leafAbs(200,288,[88,118,138,118,88][i],a,.3)),pet:"M200 288 L200 345",ej:"castaño de Indias"},
+ lineal:{d:["M200 302 C188 222 190 140 200 52 C210 140 212 222 200 302Z"],pet:"M200 302 L200 340",ej:"trigo"},
+ aguja:{d:[-118,-104,-90,-76,-62].map(a=>leafAbs(200,305,180,a,.035)),pet:"M193 305 L207 305 L204 325 L196 325Z",ej:"pino"},
+ acorazonada:{d:["M200 84 C236 140 302 190 287 256 C274 302 222 304 200 274 C178 304 126 302 113 256 C98 190 164 140 200 84Z"],pet:"M200 274 L200 345",ej:"tilo"},
+ lanceolada:{d:["M200 296 C148 262 156 160 200 56 C244 160 252 262 200 296Z"],pet:"M200 296 L200 345",ej:"sauce"}
+};
+const SHAPE_NAMES={redondeada:"Redondeada",ovalada:"Ovalada",triangular:"Triangular",palmeada:"Palmeada",lineal:"Lineal",aguja:"En aguja",acorazonada:"Acorazonada",lanceolada:"Lanceolada"};
+function shapeStatic(n,fill="#5cb85c"){const S=SHAPES[n];return PS(S.pet,"#3d7f2a",6)+S.d.map(d=>`<path d="${d}" fill="${fill}" stroke="#2e7d32" stroke-width="3" stroke-linejoin="round"/>`).join("")+(n==="aguja"?`<path d="${S.pet}" fill="#8a5a33"/>`:"")}
+function edgePath(type,x0=40,x1=360,cy=200,W=70){const N=160,top=[],bot=[];for(let i=0;i<=N;i++){const t=i/N,x=x0+(x1-x0)*t;let w=W*Math.pow(Math.sin(Math.PI*t),.85);let off=0;if(type==="dentada"){const f=(t*20)%1;off=8*f*Math.sin(Math.PI*t)}if(type==="lobulada"){off=-26*Math.abs(Math.sin(5*Math.PI*t))*Math.sin(Math.PI*t)+20*Math.sin(Math.PI*t)}w=Math.max(0,w+off);top.push(`${x.toFixed(1)} ${(cy-w).toFixed(1)}`);bot.push(`${x.toFixed(1)} ${(cy+w).toFixed(1)}`)}return "M"+top.join(" L")+" L"+bot.reverse().join(" L")+"Z"}
+const EDGE_NAMES={lisa:"Lisa",dentada:"Dentada",lobulada:"Lobulada"};
+function edgeStatic(n){return PS("M10 200 L40 200","#3d7f2a",6)+`<path d="${edgePath(n)}" fill="#5cb85c" stroke="#2e7d32" stroke-width="3" stroke-linejoin="round"/>`+PS("M40 200 L355 200","#2e7d32",2)}
+
+/* ================= Tipos de plantas: dibujos ================= */
+const ART=(()=>{
+// Dibujos vectoriales propios para las fichas "Tipos de plantas"
+const RAD = Math.PI / 180;
+let _id = 0; const uid = p => p + (++_id);
+
+function leafPath(len, wd = .38) { return `M0 0 C${len*.3} ${-len*wd} ${len*.75} ${-len*wd*.85} ${len} 0 C${len*.75} ${len*wd*.85} ${len*.3} ${len*wd} 0 0Z`; }
+function leaf(x, y, len, ang, o = {}) {
+  const f = o.fill || "#56b35a", s = o.stroke || "#2e7d32";
+  return `<g transform="translate(${x} ${y}) rotate(${ang})"><path d="${leafPath(len, o.wd || .38)}" fill="${f}" stroke="${s}" stroke-width="${o.sw || 1.4}"/>${o.vein === false ? "" : `<path d="M${len*.08} 0 L${len*.88} 0" stroke="${s}" stroke-width="1" opacity=".55"/>`}</g>`;
+}
+// punto en curva cuadrática
+const qpt = (p0, p1, p2, t) => [(1-t)*(1-t)*p0[0] + 2*(1-t)*t*p1[0] + t*t*p2[0], (1-t)*(1-t)*p0[1] + 2*(1-t)*t*p1[1] + t*t*p2[1]];
+const qang = (p0, p1, p2, t) => { const dx = 2*(1-t)*(p1[0]-p0[0]) + 2*t*(p2[0]-p1[0]), dy = 2*(1-t)*(p1[1]-p0[1]) + 2*t*(p2[1]-p1[1]); return Math.atan2(dy, dx) / RAD; };
+
+/* ---------- Iconos redondos (como el libro) ---------- */
+function iconCircle(cx, cy, r, bg, inner) { return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${bg}" stroke="#fff" stroke-width="3"/>${inner}`; }
+function iconFlowerFruit(cx, cy, r, bg = "#e0662b") {
+  let p = ""; for (let i = 0; i < 5; i++) p += `<ellipse cx="0" cy="${-r*.22}" rx="${r*.12}" ry="${r*.2}" fill="none" stroke="#fff" stroke-width="2.4" transform="rotate(${i*72})"/>`;
+  return iconCircle(cx, cy, r, bg, `<g transform="translate(${cx - r*.22} ${cy + r*.08})">${p}<circle r="${r*.07}" fill="#fff"/></g><circle cx="${cx + r*.25}" cy="${cy - r*.12}" r="${r*.26}" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="${cx+r*.18}" cy="${cy-r*.2}" r="2" fill="#fff"/><circle cx="${cx+r*.32}" cy="${cy-r*.05}" r="2" fill="#fff"/>`);
+}
+function iconCone(cx, cy, r, bg = "#e0662b") {
+  let sc = ""; for (let row = 0; row < 5; row++) { const y = cy - r*.45 + row*r*.17, n = row < 1 ? 1 : row < 4 ? 2 : 1, w = r*(.14 + .04*Math.min(row, 4-row)); for (let k = 0; k < n; k++) { const x = cx + (n === 2 ? (k ? w*.55 : -w*.55) : 0); sc += `<path d="M${x-w*.5} ${y} Q${x} ${y+r*.2} ${x+w*.5} ${y}" fill="none" stroke="#fff" stroke-width="2"/>`; } }
+  return iconCircle(cx, cy, r, bg, `<path d="M${cx} ${cy-r*.6} C${cx+r*.36} ${cy-r*.4} ${cx+r*.36} ${cy+r*.3} ${cx} ${cy+r*.5} C${cx-r*.36} ${cy+r*.3} ${cx-r*.36} ${cy-r*.4} ${cx} ${cy-r*.6}Z" fill="none" stroke="#fff" stroke-width="2.4"/>${sc}`);
+}
+function iconMoss(cx, cy, r, bg = "#4f9d3a") {
+  let s = ""; [-.28, 0, .28].forEach(d => { const x = cx + d*r; s += `<path d="M${x} ${cy+r*.45} L${x} ${cy-r*.35}" stroke="#fff" stroke-width="2"/><path d="M${x} ${cy-r*.35} q${r*.1} ${-r*.12} ${r*.04} ${-r*.2}" stroke="#fff" stroke-width="2" fill="none"/>`; for (let k = 0; k < 5; k++) { const y = cy + r*.35 - k*r*.15; s += `<path d="M${x} ${y} l${-r*.1} ${-r*.08} M${x} ${y} l${r*.1} ${-r*.08}" stroke="#fff" stroke-width="1.8"/>`; } });
+  return iconCircle(cx, cy, r, bg, s);
+}
+function iconFern(cx, cy, r, bg = "#4f9d3a") {
+  let s = `<path d="M${cx-r*.35} ${cy+r*.5} Q${cx} ${cy} ${cx+r*.4} ${cy-r*.5}" stroke="#fff" stroke-width="2.4" fill="none"/>`;
+  const p0 = [cx-r*.35, cy+r*.5], p1 = [cx, cy], p2 = [cx+r*.4, cy-r*.5];
+  for (let i = 1; i < 9; i++) { const t = i/9, [x, y] = qpt(p0, p1, p2, t), a = qang(p0, p1, p2, t), L = r*.28*(1-t*.7); s += leaf(x, y, L, a-65, { fill: "#fff", stroke: "#fff", wd: .3, vein: false }) + leaf(x, y, L, a+65, { fill: "#fff", stroke: "#fff", wd: .3, vein: false }); }
+  return iconCircle(cx, cy, r, bg, s);
+}
+
+/* ---------- Árboles y plantas ---------- */
+function ground(x, y, w, c = "#7cc35e") { return `<ellipse cx="${x}" cy="${y}" rx="${w/2}" ry="${w*.06}" fill="${c}" opacity=".55"/>`; }
+function trunkPath(x, g, h, w, c = "#8a5a33") { return `<path d="M${x-w} ${g} C${x-w*.6} ${g-h*.4} ${x-w*.7} ${g-h*.7} ${x-w*.45} ${g-h} L${x+w*.45} ${g-h} C${x+w*.7} ${g-h*.7} ${x+w*.6} ${g-h*.4} ${x+w} ${g}Z" fill="${c}" stroke="#5e3a1d" stroke-width="1.6"/>`; }
+
+function olivo(x, g, s = 1) {
+  let o = ground(x, g, 110*s);
+  o += `<path d="M${x-9*s} ${g} C${x-14*s} ${g-20*s} ${x+6*s} ${g-30*s} ${x-4*s} ${g-48*s} L${x+6*s} ${g-50*s} C${x+14*s} ${g-30*s} ${x+2*s} ${g-22*s} ${x+10*s} ${g}Z" fill="#8c7a63" stroke="#5e4f3c" stroke-width="1.5"/>`;
+  o += `<path d="M${x} ${g-45*s} Q${x-22*s} ${g-60*s} ${x-34*s} ${g-66*s} M${x+2*s} ${g-46*s} Q${x+22*s} ${g-62*s} ${x+34*s} ${g-70*s}" stroke="#7a6a55" stroke-width="${4*s}" fill="none" stroke-linecap="round"/>`;
+  [[0,-82,40],[-30,-70,30],[30,-74,30],[-14,-100,26],[16,-98,26]].forEach(([dx,dy,r],i)=>o+=`<circle cx="${x+dx*s}" cy="${g+dy*s}" r="${r*s}" fill="${i%2?'#8fae76':'#7d9e66'}"/>`);
+  for (let i = 0; i < 46; i++) { const a = i*137.5, rr = 8 + (i*13)%34, lx = x + Math.cos(a*RAD)*rr*1.05*s, ly = g - 84*s + Math.sin(a*RAD)*rr*.72*s; o += leaf(lx, ly, 14*s, a, { fill: i%3 ? "#a9c493" : "#6f9158", stroke: "none", wd: .24, vein: false, sw: 0 }); }
+  [[-20,-70],[10,-62],[26,-88],[-6,-96],[-30,-90],[4,-78]].forEach(([dx,dy],i)=>o+=`<ellipse cx="${x+dx*s}" cy="${g+dy*s}" rx="${3.6*s}" ry="${4.6*s}" fill="${i%2?'#3b3a2f':'#6b7a2e'}"/>`);
+  [[-12,-110],[22,-104],[-34,-80]].forEach(([dx,dy])=>{for(let k=0;k<5;k++)o+=`<circle cx="${x+dx*s+(k%3)*3*s}" cy="${g+dy*s+Math.floor(k/3)*3*s}" r="${1.7*s}" fill="#fffbe6" stroke="#d9cf9a" stroke-width=".5"/>`});
+  return o;
+}
+function orangeFruit(cx, cy, r) { return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ff9a1f" stroke="#d26f00" stroke-width="1.4"/><ellipse cx="${cx-r*.35}" cy="${cy-r*.35}" rx="${r*.25}" ry="${r*.16}" fill="#fff" opacity=".45"/>`; }
+function naranjo(x, g, s = 1) {
+  let o = ground(x, g, 110*s) + trunkPath(x, g, 46*s, 9*s);
+  [[0,-86,44],[-34,-72,30],[34,-72,30],[-18,-112,28],[20,-110,28],[0,-60,30]].forEach(([dx,dy,r],i)=>o+=`<circle cx="${x+dx*s}" cy="${g+dy*s}" r="${r*s}" fill="${i%2?'#2f7d32':'#3c8f3a'}"/>`);
+  for (let i = 0; i < 26; i++) { const a = i*137.5, rr = 10 + (i*17)%36; o += leaf(x + Math.cos(a*RAD)*rr*s, g - 86*s + Math.sin(a*RAD)*rr*.8*s, 12*s, a, { fill: "#4caf50", stroke: "#2e7d32", wd: .4, vein: false, sw: .7 }); }
+  [[-26,-70],[14,-64],[30,-92],[-6,-104],[-36,-96],[4,-84],[24,-118]].forEach(([dx,dy])=>o+=orangeFruit(x+dx*s, g+dy*s, 8*s));
+  [[-16,-122],[36,-74]].forEach(([dx,dy])=>{let p="";for(let k=0;k<5;k++)p+=`<ellipse cx="0" cy="-3" rx="1.6" ry="3" fill="#fff" stroke="#ddd" stroke-width=".4" transform="rotate(${k*72})"/>`;o+=`<g transform="translate(${x+dx*s} ${g+dy*s}) scale(${s})">${p}<circle r="1.3" fill="#f2c230"/></g>`});
+  return o;
+}
+function crocus(x, g, h, s = 1, rot = 0) {
+  let o = `<g transform="rotate(${rot} ${x} ${g})">`;
+  [[-6,-.9],[5,-1],[-2,-1.08]].forEach(([d,k])=>o+=`<path d="M${x} ${g} Q${x+d*s} ${g-h*.5*s} ${x+d*1.8*s} ${g+h*k*s}" stroke="#4f8f3a" stroke-width="${1.6*s}" fill="none"/>`);
+  o += `<path d="M${x} ${g} L${x} ${g-h*.55*s}" stroke="#d7e8c8" stroke-width="${2.4*s}"/>`;
+  const fy = g - h*.75*s;
+  o += `<path d="M${x} ${fy+h*.2*s} C${x-9*s} ${fy+h*.05*s} ${x-10*s} ${fy-h*.2*s} ${x-3*s} ${fy-h*.3*s} L${x} ${fy-h*.05*s}Z" fill="#7b4bb8" stroke="#4e2c80" stroke-width=".9"/><path d="M${x} ${fy+h*.2*s} C${x+9*s} ${fy+h*.05*s} ${x+10*s} ${fy-h*.2*s} ${x+3*s} ${fy-h*.3*s} L${x} ${fy-h*.05*s}Z" fill="#7b4bb8" stroke="#4e2c80" stroke-width=".9"/><path d="M${x} ${fy+h*.2*s} C${x-6*s} ${fy} ${x-5*s} ${fy-h*.3*s} ${x} ${fy-h*.38*s} C${x+5*s} ${fy-h*.3*s} ${x+6*s} ${fy} ${x} ${fy+h*.2*s}Z" fill="#9b6fd6" stroke="#4e2c80" stroke-width=".9"/>`;
+  o += `<path d="M${x} ${fy} l${-3*s} ${-h*.22*s} M${x} ${fy} l${3*s} ${-h*.22*s} M${x} ${fy} l0 ${-h*.26*s}" stroke="#e23b1f" stroke-width="${1.6*s}" stroke-linecap="round"/>`;
+  return o + `</g>`;
+}
+function azafran(x, g, s = 1) {
+  let o = ground(x, g, 120*s, "#8fc66f");
+  [[-38,52,-6],[-14,62,3],[12,56,-2],[36,50,7],[-26,40,8],[24,40,-8],[0,46,0]].forEach(([dx,h,r])=>o+=crocus(x+dx*s, g, h, s*.95, r));
+  return o;
+}
+function needleClump(cx, cy, r, c = "#2e6b34", n = 11) { let o = ""; for (let i = 0; i < n; i++) { const a = -180 + i*180/(n-1); o += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a*RAD)*r}" y2="${cy + Math.sin(a*RAD)*r}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`; } return o; }
+function cone(cx, cy, w, h, ang = 0, c = "#8a5a2b") {
+  let sc = ""; const rows = 5; for (let r = 0; r < rows; r++) { const yy = -h/2 + h*(r+.6)/rows, ww = w*Math.sin(Math.PI*(r+.6)/rows)*.9; sc += `<path d="M${-ww/2} ${yy} Q0 ${yy + h/rows*.9} ${ww/2} ${yy}" fill="none" stroke="#5e3a1d" stroke-width="1"/>`; }
+  return `<g transform="translate(${cx} ${cy}) rotate(${ang})"><ellipse rx="${w/2}" ry="${h/2}" fill="${c}" stroke="#5e3a1d" stroke-width="1.2"/>${sc}</g>`;
+}
+function pino(x, g, s = 1) {
+  let o = ground(x, g, 110*s) + `<path d="M${x-7*s} ${g} C${x-5*s} ${g-50*s} ${x-8*s} ${g-80*s} ${x-3*s} ${g-110*s} L${x+4*s} ${g-110*s} C${x+6*s} ${g-80*s} ${x+5*s} ${g-50*s} ${x+8*s} ${g}Z" fill="#9a5b35" stroke="#5e3a1d" stroke-width="1.5"/>`;
+  o += `<path d="M${x} ${g-88*s} L${x-30*s} ${g-104*s} M${x} ${g-96*s} L${x+32*s} ${g-110*s}" stroke="#8a5530" stroke-width="${3.5*s}" stroke-linecap="round"/>`;
+  [[-44,-110,26],[-14,-124,30],[18,-122,30],[46,-110,26],[0,-108,28],[-28,-100,20],[30,-100,20]].forEach(([dx,dy,r],i)=>o+=`<ellipse cx="${x+dx*s}" cy="${g+dy*s}" rx="${r*s}" ry="${r*.6*s}" fill="${i%2?'#2e6b34':'#3a7d3d'}"/>`);
+  for (let i = 0; i < 18; i++) { const dx = -60 + (i*7.4)%120, dy = -126 + ((i*11)%30); o += needleClump(x+dx*s, g+dy*s, 9*s, i%2 ? "#1f5427" : "#4a9a4a", 7); }
+  [[-24,-96,8],[22,-98,-10],[44,-102,4]].forEach(([dx,dy,a])=>o+=cone(x+dx*s, g+dy*s, 10*s, 15*s, a));
+  return o;
+}
+function cipres(x, g, s = 1) {
+  let o = ground(x, g, 80*s) + `<rect x="${x-4*s}" y="${g-14*s}" width="${8*s}" height="${14*s}" fill="#8a5a33"/>`;
+  o += `<path d="M${x} ${g-150*s} C${x+16*s} ${g-120*s} ${x+24*s} ${g-60*s} ${x+18*s} ${g-12*s} Q${x} ${g-6*s} ${x-18*s} ${g-12*s} C${x-24*s} ${g-60*s} ${x-16*s} ${g-120*s} ${x} ${g-150*s}Z" fill="#2f5e33" stroke="#1d3f21" stroke-width="1.5"/>`;
+  for (let i = 0; i < 22; i++) { const t = .08 + i*.04, yy = g - 150*s + t*138*s, half = (8 + 16*Math.sin(Math.min(1, t*1.4)*Math.PI*.55))*s, dx = ((i*37)%9 - 4)/4*half*.6; o += `<path d="M${x+dx-6*s} ${yy} q${6*s} ${-6*s} ${12*s} 0" stroke="${i%2?'#477a46':'#3b6c3c'}" stroke-width="2" fill="none"/>`; }
+  [[-8,-60],[10,-88],[-6,-112],[12,-42]].forEach(([dx,dy])=>o+=`<circle cx="${x+dx*s}" cy="${g+dy*s}" r="${4.5*s}" fill="#8e7a5c" stroke="#5e4f3c" stroke-width="1"/><path d="M${x+dx*s-3*s} ${g+dy*s} L${x+dx*s+3*s} ${g+dy*s} M${x+dx*s} ${g+dy*s-3*s} L${x+dx*s} ${g+dy*s+3*s}" stroke="#5e4f3c" stroke-width=".8"/>`);
+  return o;
+}
+function abeto(x, g, s = 1) {
+  let o = ground(x, g, 100*s) + `<rect x="${x-5*s}" y="${g-22*s}" width="${10*s}" height="${22*s}" fill="#7a4e2b"/>`;
+  const tiers = [[-20,46],[-50,40],[-78,33],[-104,26],[-126,18]];
+  tiers.forEach(([dy,w],i)=>{ const y = g + dy*s, top = y - 40*s; o += `<path d="M${x} ${top} L${x+w*s} ${y} Q${x+w*.5*s} ${y-5*s} ${x+w*.3*s} ${y+3*s} Q${x} ${y-5*s} ${x-w*.3*s} ${y+3*s} Q${x-w*.5*s} ${y-5*s} ${x-w*s} ${y}Z" fill="${i%2?'#2b6e45':'#327d4f'}" stroke="#1c4d30" stroke-width="1.3"/>`; });
+  o += `<path d="M${x} ${g-170*s} l${3*s} ${8*s} l${-6*s} 0Z" fill="#2b6e45"/>`;
+  [[-20,-72],[18,-100],[-12,-122],[26,-50]].forEach(([dx,dy])=>o+=cone(x+dx*s, g+dy*s, 7*s, 15*s, 0, "#7b4a2a"));
+  return o;
+}
+function rock(cx, cy, w, h, c = "#9aa3a8") { return `<path d="M${cx-w/2} ${cy} C${cx-w/2} ${cy-h*.7} ${cx-w*.2} ${cy-h} ${cx+w*.05} ${cy-h} C${cx+w*.35} ${cy-h} ${cx+w/2} ${cy-h*.6} ${cx+w/2} ${cy}Z" fill="${c}" stroke="#6b757b" stroke-width="1.6"/><path d="M${cx-w*.25} ${cy-h*.55} q${w*.1} ${-h*.15} ${w*.22} ${-h*.1}" stroke="#c4cbcf" stroke-width="2" fill="none"/>`; }
+function mossCushion(cx, cy, w, h, sporo = true) {
+  let o = ""; const n = Math.max(3, Math.round(w/14));
+  for (let i = 0; i < n; i++) { const x = cx - w/2 + (i+.5)*w/n, r = w/n*.75; o += `<circle cx="${x}" cy="${cy - h*.4}" r="${r}" fill="${i%2?'#5aa83f':'#4b9a37'}"/>`; }
+  o += `<rect x="${cx-w/2}" y="${cy-h*.45}" width="${w}" height="${h*.45}" rx="${h*.2}" fill="#4b9a37"/>`;
+  for (let i = 0; i < n*3; i++) { const x = cx - w/2 + 3 + (i*w/(n*3)), y = cy - h*.5 - ((i*7)%5); o += `<path d="M${x} ${y+6} l-2 -5 M${x} ${y+6} l2 -5 M${x} ${y+6} l0 -6" stroke="#7cc95b" stroke-width="1.1"/>`; }
+  if (sporo) for (let i = 0; i < n; i++) { const x = cx - w/2 + (i+.7)*w/n, hh = h*(.9 + (i%3)*.18); o += `<path d="M${x} ${cy-h*.6} Q${x+2} ${cy-h*.6-hh*.6} ${x+1} ${cy-h*.6-hh}" stroke="#b07a3c" stroke-width="1.2" fill="none"/><ellipse cx="${x+2}" cy="${cy-h*.6-hh-2}" rx="2" ry="3.6" fill="#8a5a2b" transform="rotate(20 ${x+2} ${cy-h*.6-hh-2})"/>`; }
+  return o;
+}
+function musgo(x, g, s = 1) {
+  return `<g transform="translate(${x} ${g}) scale(${s}) translate(${-x} ${-g})">${rock(x-14, g, 90, 58)}${rock(x+40, g, 60, 36, "#a6aeb3")}${mossCushion(x-22, g-34, 60, 22)}${mossCushion(x+40, g-24, 40, 16)}${mossCushion(x-60, g, 40, 18)}${mossCushion(x+6, g, 70, 16, false)}</g>`;
+}
+function frond(x, y, len, ang, bend = .25, c = "#4caf50", cd = "#2e7d32") {
+  const a = ang*RAD, ex = x + Math.cos(a)*len, ey = y + Math.sin(a)*len, mx = (x+ex)/2 - Math.sin(a)*len*bend, my = (y+ey)/2 + Math.cos(a)*len*bend;
+  const p0 = [x, y], p1 = [mx, my], p2 = [ex, ey];
+  let o = `<path d="M${x} ${y} Q${mx} ${my} ${ex} ${ey}" stroke="${cd}" stroke-width="2" fill="none"/>`;
+  const N = 14; for (let i = 1; i < N; i++) { const t = i/N, [px, py] = qpt(p0, p1, p2, t), da = qang(p0, p1, p2, t), L = len*.22*Math.sin(Math.PI*(t*.85+.1)); o += leaf(px, py, L, da-62, { fill: c, stroke: cd, wd: .26, vein: false, sw: .8 }) + leaf(px, py, L, da+62, { fill: c, stroke: cd, wd: .26, vein: false, sw: .8 }); }
+  return o;
+}
+function helecho(x, g, s = 1) {
+  let o = ground(x, g, 130*s, "#6fae55");
+  [[-160,70,-.2],[-140,82,-.18],[-115,90,-.12],[-90,86,.04],[-65,90,.12],[-40,82,.18],[-20,70,.2]].forEach(([a,l,b])=>o+=frond(x, g-2*s, l*s, a, b, "#5cb85c", "#2e7d32"));
+  o += `<path d="M${x+4*s} ${g} Q${x+8*s} ${g-26*s} ${x+16*s} ${g-30*s} a${5*s} ${5*s} 0 1 1 ${-4*s} ${-8*s}" stroke="#4e9d3c" stroke-width="${2.4*s}" fill="none"/>`;
+  return o;
+}
+function wheatPlant(x, g, s = 1) {
+  let o = "";
+  [-10,-4,2,8].forEach((d,i)=>{const h=(80+(i%2)*14)*s;o+=`<path d="M${x+d*.3*s} ${g} Q${x+d*s} ${g-h*.5} ${x+d*1.6*s} ${g-h}" stroke="#c9a24a" stroke-width="${2*s}" fill="none"/>`;let e="";for(let k=0;k<6;k++)e+=`<ellipse cx="${(k%2?3:-3)*s}" cy="${-k*5.5*s}" rx="${3*s}" ry="${5*s}" fill="#e7b94a" stroke="#b88b2a" stroke-width=".8"/>`;o+=`<g transform="translate(${x+d*1.6*s} ${g-h}) rotate(${d*1.2})">${e}<path d="M0 ${-30*s} l${-3*s} ${-12*s} M0 ${-30*s} l${3*s} ${-12*s}" stroke="#b88b2a" stroke-width=".8"/></g>`});
+  return o;
+}
+function zucchini(cx, cy, len, ang = -15, s = 1) { return `<g transform="translate(${cx} ${cy}) rotate(${ang})"><path d="M${-len/2} 0 C${-len/2} ${-len*.18} ${len/2} ${-len*.2} ${len/2} 0 C${len/2} ${len*.2} ${-len/2} ${len*.18} ${-len/2} 0Z" fill="#3f7d35" stroke="#24521f" stroke-width="1.4"/>${[-.3,-.1,.1,.3].map(t=>`<path d="M${len*t-6} ${-len*.06} l12 0" stroke="#9ccf7a" stroke-width="1.6"/>`).join("")}<rect x="${len/2-4}" y="-4" width="10" height="8" rx="2" fill="#6a8f3a"/></g>`; }
+function apple(cx, cy, r) { return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#e23b3b" stroke="#a51f24" stroke-width="1.5"/><ellipse cx="${cx-r*.35}" cy="${cy-r*.35}" rx="${r*.22}" ry="${r*.14}" fill="#fff" opacity=".5"/><path d="M${cx} ${cy-r*.8} q2 -${r*.4} ${r*.15} -${r*.5}" stroke="#6b3e1c" stroke-width="2.4" fill="none"/>${leaf(cx+2, cy-r*1.05, r*.6, -30, { wd: .4 })}`; }
+function tomato(cx, cy, r) { return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#e8402e" stroke="#a3221a" stroke-width="1.5"/><path d="M${cx-r*.5} ${cy-r*.75} L${cx} ${cy-r*.55} L${cx+r*.5} ${cy-r*.75} L${cx} ${cy-r*1.05}Z" fill="#3f8f3a"/>`; }
+function madrono(x, y, s = 1) {
+  let o = `<path d="M${x-80*s} ${y+40*s} Q${x} ${y} ${x+80*s} ${y-30*s}" stroke="#7a3b22" stroke-width="${5*s}" fill="none" stroke-linecap="round"/><path d="M${x-20*s} ${y+18*s} Q${x-10*s} ${y-20*s} ${x-30*s} ${y-50*s}" stroke="#7a3b22" stroke-width="${3.5*s}" fill="none"/>`;
+  [[-60,34,-60],[-60,34,120],[-30,22,-80],[-5,12,110],[25,0,-70],[50,-14,100],[70,-24,-40],[-28,-36,-150],[-34,-46,-30]].forEach(([dx,dy,a])=>o+=leaf(x+dx*s,y+dy*s,30*s,a,{fill:"#3f8f3a",stroke:"#24521f",wd:.3}));
+  [[-40,10,8],[-50,26,7],[10,24,8],[22,14,7],[40,4,8],[-18,-34,7],[-10,-46,6]].forEach(([dx,dy,r],i)=>{const c=["#d6322b","#ef6c2f","#f4a321"][i%3];o+=`<circle cx="${x+dx*s}" cy="${y+dy*s}" r="${r*s}" fill="${c}" stroke="#8a1c15" stroke-width="1"/>`;for(let k=0;k<5;k++)o+=`<circle cx="${x+dx*s+Math.cos(k*72*RAD)*r*.55*s}" cy="${y+dy*s+Math.sin(k*72*RAD)*r*.55*s}" r="${.9*s}" fill="#7a1a10"/>`});
+  [[60,-6],[-4,34]].forEach(([dx,dy])=>{for(let k=0;k<5;k++)o+=`<ellipse cx="${x+dx*s+(k%3-1)*4*s}" cy="${y+dy*s+Math.floor(k/3)*6*s}" rx="${2.6*s}" ry="${3.6*s}" fill="#f4f1d0" stroke="#c9c08a" stroke-width=".7"/>`});
+  return o;
+}
+function firBranch(x, y, s = 1) {
+  let o = `<path d="M${x-90*s} ${y+10*s} L${x+90*s} ${y-20*s}" stroke="#6b4422" stroke-width="${4*s}" stroke-linecap="round"/>`;
+  for (let i = 0; i < 26; i++) { const t = i/25, bx = x - 85*s + 170*s*t, by = y + 9*s - 28*s*t; o += `<line x1="${bx}" y1="${by}" x2="${bx-10*s}" y2="${by-16*s}" stroke="#2e6b34" stroke-width="2"/><line x1="${bx}" y1="${by}" x2="${bx-8*s}" y2="${by+16*s}" stroke="#3a7d3d" stroke-width="2"/>`; }
+  [[-40,4],[0,-2],[38,-10]].forEach(([dx,dy])=>o+=cone(x+dx*s, y+dy*s+30*s, 14*s, 46*s, -6, "#6b3f20"));
+  return o;
+}
+
+/* ---------- Niños ---------- */
+function kidBoy(x, y, s = 1) {
+  return `<g transform="translate(${x} ${y}) scale(${s})">
+  <path d="M-46 160 C-46 112 -30 96 0 96 C30 96 46 112 46 160Z" fill="#43a047" stroke="#2e6b31" stroke-width="2"/>
+  <path d="M-16 98 Q0 112 16 98" fill="none" stroke="#2e6b31" stroke-width="2"/>
+  <circle cx="0" cy="52" r="44" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/>
+  <ellipse cx="-44" cy="56" rx="7" ry="10" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/><ellipse cx="44" cy="56" rx="7" ry="10" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/>
+  <path d="M-46 46 C-50 4 -10 -6 8 4 C14 -10 34 -4 30 8 C44 8 52 26 46 46 C38 30 28 26 20 24 C14 34 -6 34 -16 24 C-24 32 -36 36 -46 46Z" fill="#7a4a21" stroke="#55300f" stroke-width="2"/>
+  <ellipse cx="-15" cy="56" rx="8" ry="10" fill="#fff"/><ellipse cx="15" cy="56" rx="8" ry="10" fill="#fff"/>
+  <circle cx="-13" cy="58" r="5.5" fill="#3b2412"/><circle cx="17" cy="58" r="5.5" fill="#3b2412"/><circle cx="-11" cy="56" r="1.8" fill="#fff"/><circle cx="19" cy="56" r="1.8" fill="#fff"/>
+  <path d="M-24 42 q8 -5 16 -1 M8 41 q8 -4 16 1" stroke="#55300f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <path d="M-14 76 Q0 90 14 76 Q0 82 -14 76Z" fill="#b8402e" stroke="#7a2418" stroke-width="1.6"/>
+  <circle cx="-28" cy="72" r="6" fill="#f29a8a" opacity=".55"/><circle cx="28" cy="72" r="6" fill="#f29a8a" opacity=".55"/>
+  <path d="M30 118 Q50 104 58 86" stroke="#43a047" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <circle cx="60" cy="82" r="9" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/>
+  <line x1="62" y1="78" x2="72" y2="58" stroke="#6b4422" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="80" cy="40" r="20" fill="#dff3ff" opacity=".85" stroke="#55606a" stroke-width="5"/>
+  <path d="M70 32 a12 12 0 0 1 10 -6" stroke="#fff" stroke-width="3" fill="none"/>
+  </g>`;
+}
+function kidGirl(x, y, s = 1) {
+  return `<g transform="translate(${x} ${y}) scale(${s})">
+  <path d="M-52 120 C-60 60 -56 10 0 4 C56 10 60 60 52 120Z" fill="#2b1a10"/>
+  <path d="M-46 160 C-46 112 -30 96 0 96 C30 96 46 112 46 160Z" fill="#a46ad8" stroke="#6d3fa0" stroke-width="2"/>
+  <circle cx="0" cy="54" r="42" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/>
+  <path d="M-44 52 C-46 16 -20 4 0 6 C26 4 46 18 44 52 C34 34 18 26 4 22 C-8 34 -26 40 -44 52Z" fill="#3a2414" stroke="#22140a" stroke-width="2"/>
+  <ellipse cx="-15" cy="58" rx="8" ry="10" fill="#fff"/><ellipse cx="15" cy="58" rx="8" ry="10" fill="#fff"/>
+  <circle cx="-15" cy="60" r="5.5" fill="#3b2412"/><circle cx="15" cy="60" r="5.5" fill="#3b2412"/><circle cx="-13" cy="58" r="1.8" fill="#fff"/><circle cx="17" cy="58" r="1.8" fill="#fff"/>
+  <path d="M-23 50 l-4 -4 M-17 48 l-2 -5 M23 50 l4 -4 M17 48 l2 -5" stroke="#22140a" stroke-width="1.6"/>
+  <path d="M-12 78 Q0 88 12 78" stroke="#7a2418" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <circle cx="-27" cy="72" r="6" fill="#f29a8a" opacity=".6"/><circle cx="27" cy="72" r="6" fill="#f29a8a" opacity=".6"/>
+  <circle cx="34" cy="20" r="7" fill="#ffcf3d" stroke="#d99a00" stroke-width="1.5"/>
+  <path d="M-30 118 Q-50 104 -56 88" stroke="#a46ad8" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <circle cx="-58" cy="84" r="9" fill="#f6c9a0" stroke="#c98b5d" stroke-width="2"/>
+  <path d="M-60 78 L-64 62" stroke="#f6c9a0" stroke-width="6" stroke-linecap="round"/><path d="M-60 78 L-64 62" stroke="#c98b5d" stroke-width="1" fill="none"/>
+  </g>`;
+}
+function bush(x, y, s = 1, c1 = "#5aa83f", c2 = "#4b9a37") { return [[0,0,26],[-24,6,20],[24,6,20],[-10,-14,18],[12,-14,18]].map(([dx,dy,r],i)=>`<circle cx="${x+dx*s}" cy="${y+dy*s}" r="${r*s}" fill="${i%2?c1:c2}"/>`).join(""); }
+function smallLeafSprig(x, y, s = 1, a = 0) { return `<g transform="translate(${x} ${y}) rotate(${a}) scale(${s})"><path d="M0 0 Q4 -14 0 -28" stroke="#3f8f3a" stroke-width="2.4" fill="none"/>${leaf(0,-10,18,-40,{wd:.42})}${leaf(0,-18,18,220,{wd:.42})}${leaf(0,-28,16,-80,{wd:.42})}</g>`; }
+function sunFace(x, y, r = 22) { let rays = ""; for (let i = 0; i < 12; i++) rays += `<line x1="0" y1="${-r-5}" x2="0" y2="${-r-14}" stroke="#ffc928" stroke-width="3.5" stroke-linecap="round" transform="rotate(${i*30})"/>`; return `<g transform="translate(${x} ${y})">${rays}<circle r="${r}" fill="#ffd23f" stroke="#f0a500" stroke-width="2.5"/></g>`; }
+function stone(x, y, w, h) { return `<ellipse cx="${x}" cy="${y}" rx="${w/2}" ry="${h/2}" fill="#8b9296" stroke="#5f666a" stroke-width="2"/><ellipse cx="${x-w*.15}" cy="${y-h*.15}" rx="${w*.18}" ry="${h*.1}" fill="#b4babd"/>`; }
+
+return {olivo,naranjo,azafran,pino,cipres,abeto,musgo,helecho,wheatPlant,zucchini,apple,orangeFruit,tomato,crocus,iconFlowerFruit,iconCone,iconMoss,iconFern,needleClump,cone,firBranch,rock,mossCushion,madrono};})();
+/* ================= Escenas detalladas (400×400) ================= */
+const SC={
+tipos(v){let s,cap;
+ if(v==="grupos"){s=paper("#f4f9ef");
+  const bx=(x,y,w,c,t,b,fill="#fff",tc)=>GA(x,y,`<rect x="${x-w/2}" y="${y-19}" width="${w}" height="38" rx="19" fill="${fill}" stroke="${c}" stroke-width="3"/><text x="${x}" y="${y+6}" text-anchor="middle" font-size="17" font-weight="800" fill="${tc||c}" style="font-family:var(--display)">${t}</text>`,b,.6);
+  s+=bx(200,50,170,"#2f8a2a","LAS PLANTAS",.2);
+  s+=D("M160 70 L95 128",1,.6,"#e8692a",4)+D("M240 70 L305 128",1,.6,"#4e9d3a",4);
+  s+=bx(95,148,160,"#c4501a","CON SEMILLAS",1.5,"#e8692a","#fff")+bx(305,148,160,"#2f7a25","SIN SEMILLAS",2.4,"#4e9d3a","#fff");
+  s+=D("M75 168 L50 222",3.4,.4,"#e8692a",3.5)+D("M115 168 L145 222",3.4,.4,"#e8692a",3.5)+D("M285 168 L255 222",5.6,.4,"#4e9d3a",3.5)+D("M325 168 L350 222",5.6,.4,"#4e9d3a",3.5);
+  s+=bx(50,242,96,"#e8692a","Angio.",3.8)+bx(150,242,96,"#e8692a","Gimno.",4.4)+bx(255,242,90,"#4e9d3a","Musgos",6)+bx(350,242,90,"#4e9d3a","Helechos",6.5);
+  s+=GA(50,310,ART.iconFlowerFruit(50,310,26),4)+GA(150,310,ART.iconCone(150,310,26),4.6)+GA(255,310,ART.iconMoss(255,310,26),6.2)+GA(350,310,ART.iconFern(350,310,26),6.7);
+  s+=T(50,358,"flores y",4.2,{s:13})+T(50,374,"frutos",4.2,{s:13})+T(150,358,"piñas",4.8,{s:13})+T(302,358,"ni flores ni frutos",6.9,{s:13});
+  cap=[[0,"Según cómo se reproducen, las plantas se dividen en dos grandes grupos."],[1.5,"Las plantas CON semillas…"],[2.4,"…y las plantas SIN semillas."],[3.6,"Las que tienen semillas se dividen en angiospermas y gimnospermas."],[5.6,"Las que no tienen semillas son los musgos y los helechos."]]}
+ if(v==="angio"){const g=360;s=bg(g)+sun(60,55,20);
+  s+=`<path d="M200 ${g} C204 300 196 250 200 200" stroke="${C.stem}" stroke-width="9" fill="none"/>`+leaf(200,290,60,-30,{fill:"#3c8f3a"})+leaf(200,260,56,210,{fill:"#3c8f3a"})+leaf(200,225,40,-60,{fill:"#3c8f3a"});
+  let pet="";for(let i=0;i<5;i++)pet+=`<ellipse cx="0" cy="-22" rx="13" ry="22" fill="#fff" stroke="#ddd" stroke-width="1.5" transform="rotate(${i*72})"/>`;
+  s+=FO(GA(200,180,`<g transform="translate(200 180)">${pet}<circle r="9" fill="#f2c230"/></g>`,.2,.8),2.4,.6);
+  s+=`<g transform="translate(200 180)"><g transform="scale(0)"><animateTransform attributeName="transform" type="scale" from="0" to="1" begin="2.8s" dur="1.6s" fill="freeze"/><circle r="50" fill="#ff9a1f" stroke="#d26f00" stroke-width="3"/><ellipse cx="-18" cy="-18" rx="12" ry="8" fill="#fff" opacity=".5"/></g></g>`;
+  s+=F(`<g transform="translate(200 180)"><circle r="50" fill="#ffd28a" stroke="#d26f00" stroke-width="5"/>${[0,1,2,3,4,5,6,7].map(i=>`<path d="M0 0 L${Math.cos(i*45*RAD)*44} ${Math.sin(i*45*RAD)*44}" stroke="#fff2d6" stroke-width="3"/>`).join("")}${[[-14,-6],[12,10],[6,-18],[-8,16]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="5" ry="8" fill="#fffbe9" stroke="#c9a14b" stroke-width="1.5"/>`).join("")}</g>`,5);
+  s+=T(320,110,"Flor",.6)+F(T(300,250,"Fruto",null),3.6)+T(200,268,"Semillas",5.6,{s:16});
+  cap=[[0,"Las angiospermas tienen flores."],[2.4,"La flor se convierte en un fruto, como esta naranja."],[5,"Y dentro del fruto están las semillas."],[7,"Angiospermas: flores, frutos y semillas."]]}
+ if(v==="flores"){s=paper("#f4f9ef");
+  s+=GA(110,330,ART.crocus(110,330,62,2.5),.3,.9)+T(110,375,"Grandes y vistosas",1,{s:15});
+  const br=`<path d="M240 300 Q290 240 360 210" stroke="#7a6a55" stroke-width="4" fill="none"/>`+[[262,272,-140],[285,250,40],[310,236,-120],[335,222,30]].map(([x,y,a])=>leaf(x,y,32,a,{fill:"#8fae76",stroke:"#56743f",wd:.22})).join("")+[[300,248],[330,226],[275,262]].map(([x,y])=>[0,1,2,3].map(k=>`<circle cx="${x+(k%2)*4}" cy="${y-6+Math.floor(k/2)*4}" r="1.8" fill="#fffbe6" stroke="#bdb37a" stroke-width=".5"/>`).join("")).join("");
+  s+=F(br,1.6)+GA(300,150,magnifier(300,150,58,[[284,140],[306,130],[296,162],[318,156]].map(([x,y])=>{let p="";for(let i=0;i<4;i++)p+=`<ellipse cx="0" cy="-6" rx="4" ry="6.5" fill="#fffbe6" stroke="#bdb37a" stroke-width="1" transform="rotate(${i*90})"/>`;return `<g transform="translate(${x} ${y})">${p}<circle r="2.5" fill="#d9c74a"/></g>`}).join(""),`${ID}fl`),2.6,.8)+T(300,375,"Muy pequeñas (olivo)",2.8,{s:15});
+  cap=[[0,"Las flores de las angiospermas pueden ser grandes y vistosas, como la del azafrán."],[2.6,"O muy pequeñas, como las del olivo. ¡Hay que mirar con lupa!"]]}
+ if(v==="clases"){const g=330;s=bg(g)+sun(350,45,18);
+  s+=GA(90,g,ART.olivo(90,g,1.05),.3,.9)+T(90,g+40,"Árbol",.8,{f:"#fff",st:"#3a2412"});
+  s+=GA(215,g,shrub(215,g,1.1)+`${[[205,g-55],[230,g-40],[190,g-40]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5" fill="#e23b3b"/>`).join("")}`,1.6,.8)+T(215,g+40,"Arbusto",2,{f:"#fff",st:"#3a2412"});
+  s+=GA(330,g,ART.azafran(330,g,.95),2.8,.8)+T(330,g+40,"Hierba",3.2,{f:"#fff",st:"#3a2412"});
+  s+=T(200,40,"¡Son la mayor parte de las plantas!",4.4,{s:17});
+  cap=[[0,"Las angiospermas pueden ser árboles, como el olivo…"],[1.6,"…arbustos…"],[2.8,"…o hierbas, como el azafrán."],[4.4,"Son la mayor parte de las plantas que conocemos."]]}
+ if(v==="gimno"){const g=380;s=bg(g);
+  s+=ART.firBranch?`<g transform="translate(-10 -10)">${ART.firBranch(200,80,1.6)}</g>`:"";
+  const closed=ART.cone(200,215,56,110,0,"#8a5a2b");
+  let open="";for(let r=0;r<7;r++){const y=160+r*16,w=18+26*Math.sin(Math.PI*(r+.5)/7);open+=`<path d="M200 ${y} L${200-w} ${y+10} L200 ${y+14}Z" fill="#9a6232" stroke="#5e3a1d" stroke-width="1.5"/><path d="M200 ${y} L${200+w} ${y+10} L200 ${y+14}Z" fill="#8a5a2b" stroke="#5e3a1d" stroke-width="1.5"/>`}
+  s+=FO(closed,2,.5)+F(open,2);
+  const seed=`<g><ellipse rx="5" ry="3.5" fill="#6b3e1c"/><path d="M4 0 C14 -6 22 -2 24 4 C18 6 10 4 4 0Z" fill="#e3c38f" opacity=".9"/></g>`;
+  [["M190 230 C170 280 150 320 130 370",3],["M210 240 C230 290 260 330 290 372",3.3],["M195 260 C200 300 190 340 205 374",3.6]].forEach(([p,b])=>s+=`<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="${b}s" dur=".2s" fill="freeze"/><animateMotion path="${p}" begin="${b}s" dur="2.2s" fill="freeze" rotate="auto"/>${seed}</g>`);
+  s+=T(320,200,"Piña",.6)+T(110,395,"Semillas",4.4,{f:"#fff",st:"#3a2412"});
+  cap=[[0,"Las gimnospermas no tienen flores ni frutos: tienen piñas."],[2,"Cuando la piña madura, se abre…"],[3.2,"…y deja caer sus semillas. ¡Los piñones son semillas de pino!"]]}
+ if(v==="hojas"){s=paper("#f4f9ef");
+  s+=GA(110,180,magnifier(110,180,80,`<rect x="20" y="90" width="180" height="180" fill="#e8f5e2"/>${ART.needleClump(110,230,70,"#2e6b34",13)}${ART.needleClump(90,250,50,"#4a9a4a",9)}`,`${ID}ag`),.3,.8)+T(110,310,"En forma de aguja",1,{s:16})+T(110,332,"(pino, abeto)",1.2,{s:13});
+  let sc="";for(let r=0;r<8;r++)for(let c=0;c<4;c++){const x=262+c*22+(r%2)*11,y=110+r*18;sc+=`<path d="M${x} ${y} q11 4 22 0 q-4 14 -11 18 q-7 -4 -11 -18Z" fill="${(r+c)%2?'#3b6c3c':'#477a46'}" stroke="#1d3f21" stroke-width="1"/>`}
+  s+=GA(300,180,magnifier(300,180,80,`<rect x="210" y="90" width="180" height="180" fill="#e8f5e2"/>${sc}`,`${ID}es`),1.8,.8)+T(300,310,"En forma de escama",2.4,{s:16})+T(300,332,"(ciprés)",2.6,{s:13});
+  cap=[[0,"Las hojas de las gimnospermas suelen ser alargadas."],[.8,"Muchas tienen forma de aguja, como las del pino."],[2.2,"Otras parecen escamas pequeñas y pegadas, como las del ciprés."]]}
+ if(v==="perennes"){const g=330;s=bg(g)+cloud(200,50,.8);
+  const lf=[];for(let i=0;i<18;i++){const x=70+((i*37)%110),y=150+((i*23)%70);lf.push([x,y])}
+  s+=trunk(120,g,110,1)+`<g>${A.out(1.5,1.5)}${canopy(120,g-140,62)}</g>`;
+  lf.forEach(([x,y],i)=>s+=`<g><animateTransform attributeName="transform" type="translate" from="0 0" to="${(i%3-1)*30} ${g-y+5}" begin="${1+i*.08}s" dur="2s" fill="freeze"/>${leaf(x,y,14,i*40,{fill:i%2?"#e0a030":"#c8642a",stroke:"#8a4a1a"})}</g>`);
+  s+=ART.pino(290,g,1.2);
+  s+=F(`<rect x="-100" y="-100" width="600" height="600" fill="#cfe3f5" opacity=".35"/>`,3.4,1)+F(flow("M60 -20 L40 330",`<circle r="3" fill="#fff"/>`,{n:6,dur:3})+flow("M200 -20 L180 330",`<circle r="3" fill="#fff"/>`,{n:6,dur:3.4})+flow("M330 -20 L310 330",`<circle r="3" fill="#fff"/>`,{n:6,dur:3.2}),3.4);
+  s+=T(120,g+40,"Pierde las hojas",4,{f:"#fff",st:"#3a2412",s:15})+T(290,g+40,"Perenne: siempre verde",4.6,{f:"#fff",st:"#3a2412",s:15});
+  cap=[[0,"Llega el otoño. Este árbol pierde sus hojas…"],[3.4,"…y en invierno se queda sin ellas."],[4.6,"Pero la mayoría de las gimnospermas son perennes: ¡siempre tienen hojas verdes!"]]}
+ if(v==="musgo"){const g=360;s=bg(g)+cloud(100,50,.9)+cloud(300,40,.7);
+  s+=`<g transform="translate(200 300) scale(2.1) translate(-200 -300)">${ART.rock(200,330,150,80)}${ART.mossCushion(196,286,130,26)}</g>`;
+  s+=flow("M120 60 L120 250",DROP,{n:3,dur:1.6,begin:.5})+flow("M200 60 L200 240",DROP,{n:3,dur:1.5,begin:.8})+flow("M290 60 L290 250",DROP,{n:3,dur:1.7,begin:.6})+flow("M160 60 L160 245",DROP,{n:3,dur:1.6,begin:1.1})+flow("M250 60 L250 245",DROP,{n:3,dur:1.5,begin:1.3});
+  s+=F([70,120,170,220,270,320].map((x,i)=>`<circle cx="${x}" cy="${250+(i%2)*6}" r="16" fill="#9fe3ff" opacity=".5">${A.pulse(1.2,.1)}</circle>`).join(""),2.4);
+  s+=T(200,385,"Absorben agua por todo su cuerpo",2.6,{f:"#fff",st:"#3a2412",s:16});
+  cap=[[0,"Los musgos son plantas muy pequeñas y sencillas."],[1,"Cuando llueve, el agua cae sobre ellos…"],[2.6,"…y la absorben por todo su cuerpo, junto con las sales minerales."],[5,"Viven en lugares húmedos: en el suelo, en las rocas y en los troncos."]]}
+ if(v==="helecho"){const g=320;s=bg(g)+`<path d="M-100 400 C80 360 260 380 500 350 L500 520 L-100 520Z" fill="#6fb6e6"/>`+`<rect x="-100" y="-100" width="600" height="${g+100}" fill="#cfe3d8" opacity=".55"/>`;
+  s+=D("M200 320 C200 260 230 200 260 170 C285 145 300 170 285 185 C272 196 262 182 272 176",.2,1.4,"#4e9d3c",5);
+  s+=GA(200,g,ART.helecho(200,g,2),1.8,1.2);
+  s+=F(ART.musgo(345,g+4,.55),3)+T(345,g+44,"musgo",3.2,{s:13,f:"#fff",st:"#3a2412"});
+  s+=T(110,70,"Hojas grandes",3.4,{s:17});
+  cap=[[0,"Las hojas nuevas del helecho salen enrolladas, como un caracol."],[1.8,"Al crecer se abren y se hacen muy grandes."],[3.2,"Los helechos son más grandes que los musgos."],[4.6,"Viven en lugares húmedos, como algunos bosques o las orillas de los ríos."]]}
+ if(v==="comida"){s=paper("#fdf4e8");
+  const it=[[ART.wheatPlant(70,220,1),70,"Trigo"],[ART.zucchini(200,170,90,-15),200,"Calabacín"],[ART.apple(320,170,32),320,"Manzana"],[ART.orangeFruit(120,300,30),120,"Naranja"],[ART.tomato(270,300,28),270,"Tomate"]];
+  it.forEach(([svg,x,n],i)=>{const y=i<3?230:345;s+=GA(x,y-50,svg,.3+i*.5,.6)+T(x,y,n,.5+i*.5,{s:15})});
+  s+=T(200,48,"Comemos sus frutos y semillas",3.2,{s:18});
+  cap=[[0,"¿De qué plantas nos alimentamos?"],[1,"Trigo, calabacín, manzana, naranja, tomate…"],[3.2,"¡Casi todas son plantas con semillas! Comemos sus frutos y sus semillas."]]}
+ return {svg:s,cap}},
+
+root(v){const g=170;let s=bg(g)+pebbles(g,[[40,60],[330,90],[110,170],[290,190],[60,215],[370,40],[-60,120],[460,150],[20,120],[-80,40]]);let cap;
+ if(v==="general"||v==="water"){
+  if(v==="general")s+=wind(20,5);
+  s+=plant(200,g,115,{sa:v==="general"?7:2.5,sd:2.2,ll:40,fr:16});
+  s+=rootsMain(200,g,.3,1.5);
+  s+=flow(`M40 360 C110 340 170 300 196 240 L200 ${g} L200 ${g-80}`,DROP,{n:4,dur:3.4,begin:2});
+  s+=flow(`M360 365 C290 345 230 300 204 250 L200 ${g} L200 ${g-80}`,DROP,{n:4,dur:3.4,begin:2.5});
+  if(v==="water"){s+=flow(`M80 300 C130 290 175 270 197 230 L200 ${g}`,DOT("#f6a43a",3.5),{n:3,dur:3,begin:3.5})+flow(`M320 300 C280 290 225 270 203 230 L200 ${g}`,DOT("#ffffff",3.5),{n:3,dur:3,begin:4});
+   s+=T(85,385,"Agua",2,{f:"#fff",st:"#3a2412"})+T(320,385,"Sales minerales",4,{f:"#fff",st:"#3a2412"});
+   cap=[[0,"Bajo tierra hay agua y sales minerales."],[2,"Las raíces las absorben como si fueran pajitas."],[4.5,"Juntas suben por el tallo hasta las hojas."]]}
+  else{s+=T(90,385,"Absorbe agua",2.2,{f:"#fff",st:"#3a2412"})+T(310,60,"¡Sujeta!",5);
+   cap=[[0,"La raíz crece bajo tierra y se ramifica."],[2.2,"Absorbe del suelo el agua y las sales minerales."],[5,"Y sujeta la planta: ¡aunque sople el viento, no se cae!"]]}
+ }
+ if(v==="principal"){s+=`<g>${A.sway(200,g,2,4)}${dandelion(200,g,1.1)}</g>`+rootsMain(200,g,.4,1.6,true,1.6);
+  s+=T(305,250,"Raíz principal",1.6,{f:"#fff",st:"#3a2412"})+F(line(255,252,206,262,"#fff",3),1.6)+T(95,330,"Raíces pequeñas",3.2,{f:"#fff",st:"#3a2412"});
+  cap=[[0,"El diente de león tiene una raíz principal."],[1.6,"Es una raíz gruesa que crece hacia abajo."],[3.2,"De ella salen otras raíces más pequeñas."]]}
+ if(v==="fasc"){s+=`<g>${A.sway(200,g,3,3)}${wheat(200,g,1.05)}</g>`+rootsFasc(200,g,.4,1.5);
+  s+=T(200,385,"Muchas raíces finas y parecidas",2.5,{f:"#fff",st:"#3a2412"});
+  cap=[[0,"El trigo no tiene una raíz principal."],[1.5,"Tiene muchas raíces finas y parecidas entre sí."],[4,"Juntas forman como una cabellera que agarra bien la tierra."]]}
+ if(v==="reserva"){s+=carrotLeaves(170,g,1.3)+GY(170,g,carrotRoot(170,g,1.45),.4,2.2);
+  s+=flow(`M170 ${g-60} L170 ${g} L170 ${g+90}`,SUGAR,{n:4,dur:2.6,begin:2.8});
+  s+=F(beet(320,g,1)+"",5)+T(170,g+215,"Zanahoria",1,{f:"#fff",st:"#3a2412"})+T(320,g+105,"Remolacha",5.2,{f:"#fff",st:"#3a2412"})+T(170,g-110,"Guarda alimento",3);
+  cap=[[0,"La zanahoria tiene una raíz de reserva."],[2.8,"Es gruesa porque guarda alimento para cuando lo necesite."],[5,"La remolacha también. ¡Y las dos nos las comemos!"]]}
+ return {svg:s,cap}},
+
+herb(){const g=300;let s=bg(g)+pebbles(g)+cloud(80,70)+wind(90,.5);
+ [[50,90,4],[110,120,3],[290,110,3.4],[350,85,4.4],[-20,80,3.6],[420,95,3]].forEach(([x,h,d])=>s+=`<g>${A.sway(x,g,8,d)}${herb(x,g,h,1.1)}</g>`);
+ s+=`<g>${A.sway(200,g,16,2.6)}${herb(200,g,170,1.5,"#4fb14a")}${daisy(200,g-178,18)}</g>`;
+ s+=T(200,345,"Fino, blando y verde",1.5,{f:"#fff",st:"#3a2412"});
+ return {svg:s,cap:[[0,"Las hierbas tienen tallos herbáceos."],[1.5,"Son finos, blandos y flexibles, y casi siempre verdes."],[4,"Mira cómo se doblan con el viento sin romperse."]]}},
+
+wood(v){const g=300;let s=bg(g)+pebbles(g)+cloud(300,60,.8);
+ s+=GY(120,g,trunk(120,g,165,1.05),.3,1.6)+GA(120,g-195,canopy(120,g-195,72),1.5,1);
+ const sp=shrubParts(300,g,1.25);s+=GY(300,g,sp.t,2.6,1)+GA(300,g-40,sp.c,3.1,.9);
+ s+=F(line(80,g,80,g-165,"#ffd23f",4,"8 6")+line(72,g-165,88,g-165,"#ffd23f",4),4.2);
+ s+=F(line(355,g,355,g-22,"#ffd23f",4,"6 5")+line(347,g-22,363,g-22,"#ffd23f",4),5.2);
+ s+=T(120,g+42,"Árbol: tronco alto",4.2,{f:"#fff",st:"#3a2412"})+T(300,g+42,"Arbusto: tronco corto",5.2,{f:"#fff",st:"#3a2412"})+T(120,g+70,"ramas lejos del suelo",4.6,{s:14,f:"#fff",st:"#3a2412"})+T(300,g+70,"ramas cerca del suelo",5.6,{s:14,f:"#fff",st:"#3a2412"});
+ const cap=v==="shrub"?[[0,"Los arbustos también tienen tallo leñoso: duro y rígido."],[2.6,"Pero su tronco es muy corto…"],[5.2,"…y sus ramas salen cerca del suelo."]]:[[0,"Los árboles tienen un tallo leñoso, duro y rígido: el tronco."],[1.5,"Su tronco es alto…"],[4.2,"…y las ramas crecen lejos del suelo."]];
+ return {svg:s,cap}},
+
+photo(v){const g=420;let s=bg(g)+sun(70,70)+cloud(330,250,.7);
+ const stem=`<path d="M110 440 C120 360 140 300 150 250" stroke="${C.stem}" stroke-width="11" fill="none" stroke-linecap="round"/>`;
+ const lp=leafAbs(150,250,205,-25,.42),P=rotP(150,250,-25);
+ s+=stem+`<path d="${lp}" fill="${C.leaf}" stroke="${C.leafD}" stroke-width="2.5"/><path d="M150 250 L${P(195,0)}" stroke="${C.leafD}" stroke-width="2.5" opacity=".6"/>`+[.3,.5,.7].map(t=>`<path d="M${P(205*t,0)} L${P(205*t+28,-30)} M${P(205*t,0)} L${P(205*t+28,30)}" stroke="${C.leafD}" stroke-width="1.6" opacity=".5"/>`).join("");
+ const cfg={basic:{sun:0,co2:1.5,water:1.5,o2:4.2,food:4.6},sun:{sun:0},gases:{co2:.5,o2:2.6},needs:{sun:0,co2:2,water:4},gets:{sunlite:0,o2:1,food:2.6}}[v];
+ const sb=cfg.sun!=null?cfg.sun:cfg.sunlite;
+ if(sb!=null){const ray=(x2,y2)=>`<line x1="88" y1="88" x2="${x2}" y2="${y2}" stroke="#ffcf2e" stroke-width="${cfg.sun!=null?6:3}" stroke-dasharray="12 10" stroke-linecap="round"><animate attributeName="stroke-dashoffset" from="44" to="0" dur="1s" repeatCount="indefinite"/></line>`;
+  s+=F(ray(205,228)+ray(255,205)+ray(300,180),sb)+F(`<path d="${lp}" fill="#c9f27e" opacity="0"><animate attributeName="opacity" values="0;.55;0" dur="2s" repeatCount="indefinite"/></path>`,sb+.4);
+  if(cfg.sun!=null)s+=T(150,140,"Luz = energía",sb+1);}
+ if(cfg.co2!=null)s+=flow("M450 300 C380 285 320 255 262 222",CO2,{n:3,dur:3.6,begin:cfg.co2})+T(345,345,"Dióxido de carbono",cfg.co2);
+ if(cfg.water!=null)s+=flow(`M110 440 C120 360 140 300 150 250 L232 212`,DROP,{n:4,dur:3,begin:cfg.water})+T(75,395,"Agua y sales",cfg.water,{a:"start"});
+ if(cfg.o2!=null)s+=flow("M236 196 C262 150 300 100 362 40",O2,{n:3,dur:3.4,begin:cfg.o2})+T(350,95,"Oxígeno",cfg.o2);
+ if(cfg.food!=null)s+=flow(`M244 214 L150 250 C140 300 120 360 110 440`,SUGAR,{n:4,dur:3.2,begin:cfg.food})+T(200,320,"Alimento",cfg.food,{a:"start"});
+ const caps={
+  basic:[[0,"La hoja recibe la luz del Sol."],[1.5,"Toma dióxido de carbono del aire y el agua que sube desde la raíz."],[4.2,"Con todo eso fabrica su alimento y suelta oxígeno."],[7,"¡Eso es la fotosíntesis!"]],
+  sun:[[0,"El Sol da su luz a las hojas."],[1.5,"La luz es la energía que la hoja necesita para cocinar su alimento."],[4,"Sin luz, la planta no puede fabricar comida."]],
+  gases:[[0,"El aire tiene un gas llamado dióxido de carbono."],[.6,"Entra en la hoja por unos agujeritos diminutos."],[2.6,"Y la hoja expulsa oxígeno: ¡el que respiramos nosotros!"]],
+  needs:[[0,"Para hacer la fotosíntesis la hoja necesita tres cosas."],[.4,"1. La luz del Sol."],[2,"2. Dióxido de carbono del aire."],[4,"3. Agua y sales minerales del suelo."]],
+  gets:[[0,"¿Qué consigue la hoja con la fotosíntesis?"],[1,"Oxígeno, que expulsa al aire."],[2.6,"Y alimento: la savia elaborada, que viaja por toda la planta."]]};
+ return {svg:s,cap:caps[v]}},
+
+chloro(){const g=420;let s=bg(g)+sun(70,70);
+ s+=`<path d="M110 440 C120 360 140 300 150 250" stroke="${C.stem}" stroke-width="11" fill="none"/><path d="${leafAbs(150,250,205,-25,.42)}" fill="${C.leaf}" stroke="${C.leafD}" stroke-width="2.5"/>`;
+ s+=`<line x1="88" y1="88" x2="250" y2="205" stroke="#ffcf2e" stroke-width="5" stroke-dasharray="12 10"><animate attributeName="stroke-dashoffset" from="44" to="0" dur="1s" repeatCount="indefinite"/></line>`;
+ s+=GA(275,185,magnifier(275,185,95,cells(275,185,95),`${ID}cp`),.8,1);
+ s+=T(275,335,"Clorofila",2.6)+T(275,360,"(dentro de la hoja)",3,{s:14});
+ return {svg:s,cap:[[0,"Vamos a mirar la hoja con una lupa gigante."],[1.4,"Dentro hay unas bolitas verdes con clorofila."],[3,"La clorofila atrapa la luz del Sol… ¡y da el color verde a las hojas!"]]}},
+
+sap(v){const g=280;let s=bg(g)+pebbles(g)+cloud(320,60,.8);
+ s+=plant(200,g,200,{sway:false,sw:14,ll:60})+rootsMain(200,g,0,1,false);
+ s+=`<path d="M200 ${g} C208 ${g-80} 192 ${g-140} 200 ${g-200}" stroke="#86cf7c" stroke-width="5" fill="none" opacity=".8"/>`;
+ const bru=v!=="elab",ela=v!=="bruta";
+ if(bru){["M140 395 C170 360 195 320 200 280 L200 210 L240 192","M262 392 C230 360 205 320 200 280 L200 170 L160 152","M200 405 L200 280 L200 130 L240 112"].forEach((p,i)=>s+=flow(p,DOT(C.water,5.5),{n:4,dur:3.4,begin:.4+i*.3}));s+=T(80,240,"Savia bruta",.6,{f:"#1f6fc2"})+T(80,262,"sube ↑",1,{s:14,f:"#1f6fc2"})}
+ if(ela){const b=bru?3.2:.4;["M240 192 L200 210 L200 290 L200 390","M160 152 L200 170 L200 95","M240 112 L200 130 L200 300 L150 370"].forEach((p,i)=>s+=flow(p,DOT(C.sap,5.5),{n:4,dur:3.4,begin:b+i*.3}));s+=T(318,240,"Savia elaborada",b+.2,{f:"#2b7a3d"})+T(318,262,"va a toda la planta",b+.6,{s:14,f:"#2b7a3d"})}
+ const caps={both:[[0,"El tallo sostiene la planta y la mantiene derecha."],[.6,"Por dentro tiene tubitos: el agua y las sales suben desde la raíz."],[3.2,"Y el alimento que fabrican las hojas se reparte por toda la planta."]],
+  bruta:[[0,"El agua y las sales que absorbe la raíz forman la savia bruta."],[1.2,"La savia bruta sube por el tallo hasta las hojas."],[4,"Allí se usará para fabricar el alimento."]],
+  elab:[[0,"En las hojas se fabrica la savia elaborada: el alimento de la planta."],[1.2,"Esta savia baja y se reparte por toda la planta."],[4,"Así crecen la raíz, el tallo, las hojas y las flores."]]};
+ return {svg:s,cap:caps[v]}},
+
+resp(v){let s,cap;
+ if(v==="night"){const g=330;s=bg(g,{night:true})+stars([[30,40],[90,90],[150,30],[250,50],[300,130],[60,150],[200,95],[370,170],[-40,80],[440,60]])+moon(330,60);
+  s+=plant(200,g,200,{daisy:true,fr:20,ll:62})+rootsMain(200,g,0,.9,false);
+  s+=flow("M-40 150 C40 160 110 175 158 160",O2,{n:3,dur:3.4,begin:.6})+flow("M-40 260 C60 250 130 230 175 205",O2,{n:2,dur:3.4,begin:1.2});
+  s+=flow("M240 170 C300 160 360 170 440 150",CO2,{n:3,dur:3.6,begin:2.4});
+  s+=GA(300,250,`<g transform="translate(300 250)">${BOLT}</g>`,3.8,.6)+F(`<circle cx="300" cy="250" r="26" fill="#ffd23f" opacity=".3">${A.pulse(.9,.1)}</circle>`,3.8)+T(300,300,"Energía",3.9,{f:"#fff",st:"#13214a"});
+  s+=T(80,120,"Oxígeno",.8,{f:"#fff",st:"#13214a"})+T(340,210,"Dióxido de carbono",2.4,{f:"#fff",st:"#13214a",s:15});
+  cap=[[0,"Las plantas también respiran, igual que nosotros."],[.8,"Toman oxígeno del aire por todas sus partes."],[2.4,"Y expulsan dióxido de carbono."],[3.8,"Así consiguen la energía que necesitan para vivir."],[6.5,"Respiran día y noche, pero de noche es lo único que hacen."]]}
+ if(v==="compare"){const g=320;s=bg(g)+sun(60,60)+plant(110,g,160,{daisy:true,fr:16,ll:44});
+  s+=`<g transform="translate(290 ${g-25})"><g><animateTransform attributeName="transform" type="scale" values="1;1.07;1" dur="1.1s" repeatCount="indefinite"/><g transform="translate(-290 ${-(g-25)})">${rabbit(290,g,1.3)}</g></g></g>`;
+  s+=flow(`M110 20 C110 70 112 110 112 150`,O2,{n:2,dur:4.5,begin:.8});
+  s+=flow(`M450 120 C400 170 360 200 330 255`,O2,{n:7,dur:2,begin:2.6});
+  s+=T(110,g+40,"Planta: poco oxígeno",1,{f:"#fff",st:"#3a2412",s:15})+T(290,g+40,"Animal: mucho oxígeno",2.6,{f:"#fff",st:"#3a2412",s:15});
+  cap=[[0,"Las plantas y los animales respiran oxígeno."],[1,"Pero la planta consume muy poquito…"],[2.6,"…porque no corre ni salta como el conejo."],[5,"¡Una planta fabrica mucho más oxígeno del que gasta!"]]}
+ return {svg:s,cap}},
+
+daynight(){const g=320,K='keyTimes="0;.42;.5;.92;1"',D12='dur="12s" repeatCount="indefinite"';
+ let s=defs()+`<rect x="-1200" y="-1200" width="3200" height="${1200+g}" fill="#8fd0f5"><animate attributeName="fill" values="#8fd0f5;#8fd0f5;#1a2a55;#1a2a55;#8fd0f5" ${K} ${D12}/></rect><rect x="-1200" y="${g}" width="3200" height="2400" fill="#7a4f2f"/><rect x="-1200" y="${g-5}" width="3200" height="10" fill="#5fae4f"/>`;
+ const day=`<animate attributeName="opacity" values="1;1;0;0;1" ${K} ${D12}/>`,night=`<animate attributeName="opacity" values="0;0;1;1;0" ${K} ${D12}/>`;
+ s+=`<g>${day}${sun(70,70)}${flow("M450 230 C380 220 300 200 250 190",CO2,{n:3,dur:3})}${flow("M175 150 C140 110 100 80 40 40",O2,{n:3,dur:3})}${T(200,385,"De día: fotosíntesis",null,{f:"#fff",st:"#3a2412"})}</g>`;
+ s+=`<g opacity="0">${night}${moon(330,60,"#1a2a55")}${stars([[40,40],[150,30],[250,50],[90,110],[380,140]])}${flow("M-40 150 C40 160 110 175 158 175",O2,{n:3,dur:3})}${flow("M245 180 C300 170 360 175 440 160",CO2,{n:3,dur:3})}${T(200,385,"De noche: solo respiración",null,{f:"#fff",st:"#13214a"})}</g>`;
+ s+=plant(200,g,190,{daisy:true,fr:20,ll:60})+rootsMain(200,g,0,.8,false);
+ return {svg:s,cap:[[0,"De día la planta hace la fotosíntesis: fabrica alimento y suelta oxígeno."],[5,"De noche no hay luz, así que solo respira: toma oxígeno y suelta dióxido de carbono."],[11,"Resumen: fotosíntesis = alimento. Respiración = energía."]]}},
+
+leafparts(v){let s=paper("#e6f4de")+grid();const P=rotP(150,265,-35),lp=leafAbs(150,265,232,-35,.42);
+ s+=`<path d="M-120 400 Q20 345 128 305" stroke="#8a5a33" stroke-width="16" fill="none" stroke-linecap="round"/>`;
+ const pet=`<path d="M110 312 L150 265" stroke="#4e9d3c" stroke-width="9" stroke-linecap="round"/>`;
+ let veins=`M150 265 L${P(222,0)}`;[.22,.4,.58,.76].forEach(t=>{const w=232*.42*Math.sin(Math.PI*t)*.75;veins+=` M${P(232*t,0)} Q${P(232*t+20,-w*.5)} ${P(232*t+38,-w*.9)} M${P(232*t,0)} Q${P(232*t+20,w*.5)} ${P(232*t+38,w*.9)}`});
+ const limbo=`<path d="${lp}" fill="${C.leaf}" stroke="${C.leafD}" stroke-width="3"/>`;
+ if(v==="limbo"){s+=pet+`<g filter="url(#${ID}gl)">${A.pulse(1.6,.75)}${limbo}</g>`+D(veins,2.6,2.2,C.leafD,2.2,'opacity=".7"');
+  s+=`<g opacity="0">${A.fade(1.6)}${sun(370,40,20)}<line x1="355" y1="58" x2="300" y2="150" stroke="#ffcf2e" stroke-width="5" stroke-dasharray="12 10"><animate attributeName="stroke-dashoffset" from="44" to="0" dur="1s" repeatCount="indefinite"/></line></g>`;
+  s+=T(300,300,"Limbo",.6,{s:22})+T(300,325,"parte ancha y plana",1,{s:15})+T(95,170,"Nervios",3,{s:16});
+  return {svg:s,cap:[[0,"Esta es la parte ancha y plana de la hoja: el limbo."],[1.6,"Es ancho para recibir mucha luz del Sol."],[3,"Fíjate en las líneas: son los nervios, por donde viaja la savia."]]}}
+ if(v==="peciolo"){s+=limbo+PS(veins,C.leafD,2);s+=`<g filter="url(#${ID}gl)">${A.pulse(1.2,.6)}${pet}</g>`;
+  s+=flow(`M-60 368 Q20 345 112 310 L150 265 L${P(222,0)}`,DOT(C.water,5),{n:5,dur:3,begin:1.2});
+  s+=T(70,250,"Pecíolo",.6,{s:22})+F(line(80,258,118,298,"#1d2b22",3),.6)+T(70,275,"une la hoja al tallo",1,{s:14});
+  return {svg:s,cap:[[0,"Este rabito es el pecíolo."],[1.2,"Une la hoja con la rama o el tallo."],[3,"Por él pasa la savia que entra y sale de la hoja."]]}}
+ s+=pet+`<path d="${lp}" fill="${C.leaf}" opacity="0">${A.fade(1.6,1)}</path>`+D(lp,.2,1.8,C.leafD,3)+D(veins,2.4,2,C.leafD,2,'opacity=".7"');
+ s+=T(300,300,"Limbo",2.8,{s:20})+T(70,250,"Pecíolo",3.6,{s:20});
+ return {svg:s,cap:[[0,"Las hojas fabrican el alimento y son verdes."],[2.8,"Tienen dos partes: el limbo…"],[3.6,"…y el pecíolo. ¡Y pueden tener formas y bordes muy distintos!"]]}},
+
+shape(n){const S=SHAPES[n];let s=paper("#eaf6e4")+grid();
+ s+=D(S.pet,.1,.6,"#3d7f2a",6);
+ S.d.forEach((d,i)=>{s+=`<path d="${d}" fill="#5cb85c" opacity="0">${A.fade(1.5+i*.08,.7)}</path>`+D(d,.4+i*.15,1.4,"#2e7d32",3.5)});
+ if(n==="aguja")s+=`<path d="${S.pet}" fill="#8a5a33" opacity="0">${A.fade(1.5)}</path>`;
+ s+=`<g opacity="0">${A.fade(2.4)}<g>${A.bob(4,2.4)}<rect x="110" y="352" width="180" height="38" rx="19" fill="#ffd23f"/><text x="200" y="378" text-anchor="middle" font-size="20" font-weight="800" fill="#3a2a00" style="font-family:var(--display)">${SHAPE_NAMES[n]}</text></g></g>`+T(200,32,"Ejemplo: "+S.ej,3,{s:16});
+ const desc={redondeada:"casi como un círculo",ovalada:"como un huevo",triangular:"como un triángulo",palmeada:"como una mano abierta",lineal:"larga y estrecha",aguja:"fina y puntiaguda como una aguja",acorazonada:"como un corazón",lanceolada:"como la punta de una lanza"}[n];
+ return {svg:s,cap:[[0,"Vamos a dibujar el contorno de esta hoja…"],[2.4,`Es una hoja ${SHAPE_NAMES[n].toLowerCase()}: ${desc}.`],[4.5,`Por ejemplo, la del ${S.ej}.`]]}},
+
+edge(n){const p=edgePath(n);let s=paper("#eaf6e4")+grid();
+ s+=D("M10 200 L40 200",.1,.4,"#3d7f2a",6)+`<path d="${p}" fill="#5cb85c" opacity="0">${A.fade(1.6,.6)}</path>`+D(p,.3,1.8,"#2e7d32",3.5)+D("M40 200 L355 200",1.8,1,"#2e7d32",2);
+ s+=`<g opacity="0">${A.fade(2.3)}<circle r="9" fill="#ffd23f" stroke="#7a5300" stroke-width="2"><animateMotion path="${p}" dur="6s" begin="2.3s" repeatCount="indefinite"/></circle></g>`;
+ s+=`<g opacity="0">${A.fade(2.4)}<rect x="120" y="320" width="160" height="38" rx="19" fill="#ffd23f"/><text x="200" y="346" text-anchor="middle" font-size="20" font-weight="800" fill="#3a2a00" style="font-family:var(--display)">Borde ${EDGE_NAMES[n].toLowerCase()}</text></g>`;
+ const desc={lisa:"liso, sin dientes, como el laurel o el olivo",dentada:"con dientes, como una sierra. Por ejemplo, el rosal",lobulada:"con lóbulos: entrantes y salientes redondeados, como el roble"}[n];
+ return {svg:s,cap:[[0,"Ahora miramos el borde de la hoja."],[2.4,`Sigue el punto amarillo: el borde es ${desc}.`]]}},
+
+fruit(k){let s=paper("#e4f1ea")+`<rect x="-1200" y="300" width="3200" height="2000" fill="#c99560"/><rect x="-1200" y="300" width="3200" height="8" fill="#a8763f"/>`;let cap;
+ const meter=(lvl,b)=>`<rect x="352" y="100" width="30" height="180" rx="15" fill="#fff" stroke="#9ab" stroke-width="3"/><clipPath id="${ID}mc"><rect x="352" y="100" width="30" height="180" rx="15"/></clipPath><g clip-path="url(#${ID}mc)"><rect x="352" y="280" width="30" height="180" fill="${C.water}"><animate attributeName="y" from="280" to="${280-180*lvl}" begin="${b}s" dur="1.6s" fill="freeze"/></rect></g>`+T(367,90,"Agua",b);
+ if(k==="carnoso"){
+  s+=FO(apple(200,190,75),1.5,.4);
+  const L=`<path d="M200 115 A75 75 0 0 0 200 265 Z" fill="#fff4dc" stroke="#d6313b" stroke-width="8"/><path d="M190 172 q-7 9 0 18 q7 -9 0 -18Z M190 200 q-7 9 0 18 q7 -9 0 -18Z" fill="#5a3412"/>`;
+  const R=`<path d="M200 115 A75 75 0 0 1 200 265 Z" fill="#fff4dc" stroke="#d6313b" stroke-width="8"/><path d="M210 172 q-7 9 0 18 q7 -9 0 -18Z M210 200 q-7 9 0 18 q7 -9 0 -18Z" fill="#5a3412"/>`;
+  s+=`<g opacity="0">${A.fade(1.5,.3)}<g><animateTransform attributeName="transform" type="translate" from="0 0" to="-48 0" begin="1.7s" dur=".8s" fill="freeze"/>${L}</g><g><animateTransform attributeName="transform" type="translate" from="0 0" to="48 0" begin="1.7s" dur=".8s" fill="freeze"/>${R}</g></g>`;
+  s+=flow("M150 262 L150 300",DROP,{n:3,dur:1.2,begin:2.6})+flow("M250 262 L250 300",DROP,{n:3,dur:1.2,begin:2.9});
+  s+=meter(.9,2.6);
+  [[orange,70,345,22,"Naranja"],[strawberry,155,342,16,"Fresa"],[peach,240,345,22,"Melocotón"]].forEach(([f,x,y,r,nm],i)=>s+=GA(x,y,f(x,y,r)+T(x,y+40,nm,null,{s:14}),4.6+i*.4,.6));
+  s+=T(200,40,"Semillas",2.4);
+  cap=[[0,"Esto es una manzana, un fruto carnoso."],[1.6,"Si la abrimos vemos las semillas dentro."],[2.6,"¡Está llena de agua! Por eso es tan jugosa."],[4.6,"La naranja, la fresa y el melocotón también son carnosos."]]}
+ else{
+  s+=FO(walnut(200,190,72),1.5,.4);
+  const kern=(dx)=>`<path d="M${200+dx} 125 C${200+dx*2.6} 140 ${200+dx*2.6} 240 ${200+dx} 255" fill="#e7c17e" stroke="#b07c3c" stroke-width="3"/>`;
+  const L=`<path d="M200 118 A72 72 0 0 0 200 262 Z" fill="#8a5a2b"/>${kern(-22)}`,R=`<path d="M200 118 A72 72 0 0 1 200 262 Z" fill="#8a5a2b"/>${kern(22)}`;
+  s+=`<g opacity="0">${A.fade(1.5,.3)}<g><animateTransform attributeName="transform" type="translate" from="0 0" to="-40 0" begin="1.7s" dur=".8s" fill="freeze"/>${L}</g><g><animateTransform attributeName="transform" type="translate" from="0 0" to="40 0" begin="1.7s" dur=".8s" fill="freeze"/>${R}</g></g>`;
+  s+=meter(.15,2.6)+T(200,40,"Cáscara dura",1.8);
+  [[almond,65,345,20,"Almendra"],[hazelnut,150,345,17,"Avellana"],[pipa,230,345,14,"Pipa"]].forEach(([f,x,y,r,nm],i)=>s+=GA(x,y,f(x,y,r)+T(x,y+38,nm,null,{s:14}),4.4+i*.4,.6));
+  cap=[[0,"Esto es una nuez, un fruto seco."],[1.8,"Tiene una cáscara dura que protege la semilla."],[2.6,"Por dentro tiene muy poca agua."],[4.4,"La almendra, la avellana y la pipa de girasol también son frutos secos."]]}
+ return {svg:s,cap}},
+
+seed(v){let s=paper("#f1f7e8");const B=beanSection();
+ if(v==="all"){s+=FO(`<path d="${KIDNEY}" fill="#f4ead2" stroke="#b49460" stroke-width="5"/><ellipse cx="140" cy="203" rx="8" ry="12" fill="#6b4422"/>`,1.2,.5);
+  s+=F(B.coat,1.2)+F(B.embryo,1.6)+F(`<ellipse cx="225" cy="240" rx="55" ry="70" fill="#ffe9a8" opacity=".6">${A.pulse(1.3,.2)}</ellipse>`,2.6)+F(`<circle cx="165" cy="140" r="38" fill="#9be07a" opacity=".35">${A.pulse(1,.1)}</circle>`,4.2);
+  s+=T(225,355,"Alimentos",2.6)+T(110,60,"Embrión",4.2)+F(line(120,68,155,108,"#1d2b22",3),4.2);
+  return {svg:s,cap:[[0,"Esta es una semilla de judía."],[1.2,"Vamos a abrirla por la mitad…"],[2.6,"La mayor parte son alimentos guardados."],[4.2,"Y aquí está el embrión: ¡una plantita diminuta!"]]}}
+ s+=B.coat;
+ if(v==="embrion"){s+=`<g transform="translate(160 140)"><g><animateTransform attributeName="transform" type="scale" values="1;1.35;1" dur="2.2s" begin="1s" repeatCount="indefinite"/><g transform="translate(-160 -140)" filter="url(#${ID}gl)">${B.embryo}</g></g></g>`;
+  s+=T(110,60,"Embrión",.5)+T(110,82,"(futura planta)",.9,{s:14})+F(line(120,90,152,112,"#1d2b22",3),.5);
+  return {svg:s,cap:[[0,"Este es el embrión."],[1,"Es la futura planta, en miniatura."],[3,"Ya tiene una raicita y dos hojitas, esperando para crecer."]]}}
+ s+=`<g transform="translate(162 140)"><g transform="scale(1)"><animateTransform attributeName="transform" type="scale" from="1" to="1.5" begin="2.5s" dur="3s" fill="freeze"/><g transform="translate(-162 -140)">${B.embryo}</g></g></g>`;
+ [[240,270],[200,300],[250,200],[215,240],[170,260]].forEach(([x,y],i)=>s+=flow(`M${x} ${y} Q${(x+165)/2+20} ${(y+150)/2} 166 150`,DOT("#f2b64a",5),{n:2,dur:2.4,begin:1+i*.3}));
+ s+=T(250,360,"Alimentos",.4);
+ return {svg:s,cap:[[0,"La semilla guarda alimentos."],[1,"Cuando empieza a germinar, el embrión se los come…"],[3,"…y así tiene fuerza para crecer antes de tener hojas."]]}},
+
+seeds(){const g=260;let s=bg(g)+pebbles(g)+sun(60,55,22);
+ [[judia,70,"Judía",16],[pipa,160,"Pipa",13],[maiz,250,"Maíz",15],[lenteja,340,"Lenteja",13]].forEach(([f,x,nm,r],i)=>{
+  s+=GA(x,g+30,f(x,g+30,r),.3+i*.4,.6)+T(x,g+80,nm,.5+i*.4,{f:"#fff",st:"#3a2412"});
+  s+=D(`M${x} ${g+18} L${x} ${g-70}`,2.6+i*.4,1.3,C.stem,5)+GA(x,g-70,leaf(x,g-70,26,-40)+leaf(x,g-70,26,220),3.6+i*.4,.6)+D(`M${x} ${g+42} L${x} ${g+100}`,2.6+i*.4,1.2,C.root,3)});
+ return {svg:s,cap:[[0,"Judía, pipa de girasol, maíz y lenteja: ¡todas son semillas!"],[2.6,"Si encuentran agua y buena temperatura…"],[3.6,"…de cada una nace una nueva planta."]]}},
+
+germ(n){const g=170,P=[0,2.2,4.4,6.8],all=n==="all",o=all?0:P[n-1]-.3,inc=k=>all||k<=n,b=t=>+(t-o).toFixed(2);
+ let s=bg(g)+pebbles(g,[[50,40],[330,70],[110,150],[290,190],[60,210],[370,140],[-60,80],[460,110]]);
+ if(inc(1)){s+=FO(flow("M80 -40 L80 180",DROP,{n:3,dur:1.2,begin:b(0)})+flow("M200 -60 L200 190",DROP,{n:3,dur:1.3,begin:b(.3)})+flow("M320 -40 L320 180",DROP,{n:3,dur:1.1,begin:b(.6)}),b(2.4),.5);
+  s+=`<ellipse cx="200" cy="232" rx="78" ry="48" fill="#2b170a" opacity="0"><animate attributeName="opacity" from="0" to=".35" begin="${b(1.3)}s" dur="1s" fill="freeze"/></ellipse>`;
+  s+=`<g transform="translate(200 230)"><g transform="translate(0 -300)"><animateTransform attributeName="transform" type="translate" from="0 -300" to="0 0" begin="${b(0)}s" dur="1.2s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".5 0 .8 1"/><ellipse rx="24" ry="16" fill="#f4ead2" stroke="#a5824c" stroke-width="3"/></g></g>`}
+ if(inc(2)){s+=D("M196 216 Q204 230 197 245",b(2.2),.5,"#7a5a2a",2.5)+D("M206 244 C210 270 206 300 212 335",b(2.6),1.5,C.root,4.5)}
+ if(inc(3)){s+=D("M200 216 C204 190 196 150 200 112",b(4.4),1.3,C.stem,5.5)+GA(200,112,leaf(200,112,32,-35)+leaf(200,112,32,215),b(5.6),.7)}
+ if(inc(4)){s+=D("M200 112 C204 90 196 70 200 40",b(6.8),1.2,C.stem,5.5)+GA(200,78,leaf(200,78,42,-25),b(7.5),.6)+GA(200,52,leaf(200,52,38,205),b(8),.6)+GA(200,40,leaf(200,40,30,-80),b(8.4),.6)+D("M209 280 Q232 300 248 335",b(7),1,C.root,3)+D("M208 300 Q182 322 170 352",b(7.3),1,C.root,3)+D("M211 318 Q226 340 232 372",b(7.6),1,C.root,2.5)}
+ const caps=[[0,"Paso 1: la semilla cae al suelo y encuentra humedad."],[2.2,"Paso 2: la semilla se abre y sale la raíz, hacia abajo."],[4.4,"Paso 3: crece el tallo hacia arriba y aparecen las primeras hojas."],[6.8,"Paso 4: la plantita sigue creciendo y se convierte en una planta."]];
+ const cap=all?caps.concat([[9.6,"¡De una semilla nace una nueva planta!"]]):[[0,caps[n-1][1]]];
+ return {svg:s,cap}},
+
+flower(part){const g=430;let s=bg(g)+cloud(60,60,.8)+cloud(340,40,.6);const f=flowerParts(part==="corola"?{open:.3}:{});
+ const em=(name,str)=>{const on=name===part||(part==="ovario"&&name==="ovario")||(part==="polen"&&name==="estambres");return on?`<g filter="url(#${ID}gl)">${A.pulse(1.6,.75)}${str}</g>`:(part==="corola"?str:`<g opacity=".35">${str}</g>`)};
+ s+=f.stem+em("caliz",f.caliz)+em("corola",f.corola)+em("estambres",f.estambres)+em("pistilo",f.estilo)+em(part==="ovario"?"ovario":"pistilo",f.ovario);
+ let cap;
+ if(part==="pistilo"){s+=T(320,140,"Pistilo",.6,{s:22})+F(line(290,145,214,156),.6)+T(320,165,"parte femenina",1.2,{s:15})+T(320,270,"Ovario",2.6,{s:16})+F(line(295,268,220,270),2.6);
+  cap=[[0,"En el centro de la flor está el pistilo."],[1.2,"Es la parte femenina de la flor."],[2.6,"Abajo, más ancho, tiene el ovario."]]}
+ if(part==="ovario"){s+=GA(80,250,magnifier(80,250,58,`<ellipse cx="80" cy="250" rx="30" ry="40" fill="#8fd16f" stroke="#3d7f2a" stroke-width="3"/>${[[72,232],[88,245],[72,258],[88,271]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="6" fill="#f3fbe6" stroke="#5aa83f" stroke-width="2">${A.pulse(1+i*.2,.5)}</circle>`).join("")}`,`${ID}ov`),1,.8);
+  s+=F(line(138,258,182,268,"#1d2b22",3),1.3)+T(80,345,"Ovario",1.4,{s:20})+T(80,368,"con óvulos",2.4,{s:14});
+  cap=[[0,"Dentro del pistilo está el ovario."],[1.4,"Si miramos con la lupa vemos unas bolitas: los óvulos."],[3.5,"Cuando la flor se fecunda, el ovario se convierte en el fruto y los óvulos en semillas."]]}
+ if(part==="estambres"){s+=T(75,110,"Estambres",.6,{s:22})+F(line(85,120,160,165),.6)+T(75,135,"parte masculina",1.2,{s:15});
+  s+=f.ANTH.map(([x,y],i)=>F([[-5,-6],[6,-3],[0,6]].map(([a,c])=>`<circle cx="${x+a}" cy="${y+c-14}" r="2.8" fill="#ffd21f" stroke="#c99a10"/>`).join(""),2.4+i*.15)).join("")+T(320,120,"Producen polen",2.6,{s:15});
+  cap=[[0,"Alrededor del pistilo están los estambres."],[1.2,"Son la parte masculina de la flor."],[2.4,"En su punta se fabrica el polen."]]}
+ if(part==="polen"){f.ANTH.forEach(([x,y],i)=>{s+=flow(`M${x} ${y} C${x+(x-200)*.6} ${y-40} ${x+(x-200)} ${y-80} ${x+(x-200)*1.5} ${y-130}`,POLLEN,{n:4,dur:3,begin:.5+i*.2})});
+  s+=GA(320,110,magnifier(320,110,48,[[300,95],[330,90],[315,120],[340,125],[298,128]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="#ffd21f" stroke="#c99a10" stroke-width="2" stroke-dasharray="3 2"/>`).join(""),`${ID}po`),1.6,.7)+T(320,190,"Polen",2,{s:22});
+  cap=[[0,"El polen se fabrica en los estambres."],[1.6,"Es un polvillo amarillo hecho de granos diminutos."],[3.5,"Sin polen no se pueden formar las semillas."]]}
+ if(part==="corola"){s+=`<g transform="translate(250 190)"><g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="2.2s" dur=".3s" fill="freeze"/><animateMotion path="M-320 -140 C-200 -200 -60 -80 0 0" dur="2.4s" begin="2.2s" fill="freeze"/><g>${A.bob(5,1.2)}${bee()}</g></g></g>`;
+  s+=T(320,330,"Corola",1.6,{s:22})+T(320,355,"= los pétalos",2,{s:15});
+  cap=[[0,"La flor abre sus pétalos. Todos juntos forman la corola."],[2,"Tienen colores llamativos…"],[3.5,"…para atraer a los insectos, como esta abeja."]]}
+ if(part==="caliz"){s+=`<g transform="translate(80 140) scale(.8)"><ellipse cx="0" cy="-20" rx="13" ry="24" fill="#f7a3c4" stroke="#d9608f" stroke-width="2"/>${[[-100,-150],[-80,-30]].map(([a0,a1])=>`<g><animateTransform attributeName="transform" type="rotate" from="${a0+90}" to="${a1+90}" begin="2s" dur="1.6s" fill="freeze"/><g transform="rotate(-90)"><path d="${leafP(46,.3)}" fill="#4f9d45" stroke="#2e7d32" stroke-width="2"/></g></g>`).join("")}<path d="M0 0 L0 60" stroke="${C.stem}" stroke-width="6"/></g>`;
+  s+=T(80,215,"Capullo",.8,{s:15})+T(320,340,"Cáliz",.6,{s:22})+F(line(292,332,252,305),.6)+T(320,365,"= los sépalos",1,{s:15});
+  cap=[[0,"Debajo de los pétalos hay unas hojitas verdes: los sépalos."],[1,"Todos juntos forman el cáliz."],[2,"El cáliz protege la flor cuando todavía es un capullo."]]}
+ return {svg:s,cap}},
+
+pollin(){const g=385;let s=bg(g)+cloud(300,50,.7);const f=flowerParts();
+ const fl=(tx)=>`<g transform="translate(${tx} 152) scale(.55)">${f.stem}${f.caliz}${f.corola}${f.estambres}${f.estilo}${f.ovario}</g>`;
+ s+=fl(-15)+fl(185);
+ const path="M76 232 C120 90 250 90 294 222";
+ s+=`<g><animateMotion path="${path}" dur="4s" begin="1s" repeatCount="indefinite"/><g transform="translate(0 -14)">${bee()}</g></g>`;
+ s+=flow(path,POLLEN,{n:3,dur:4,begin:1.1})+flow(path,`<g transform="translate(-6 4)">${POLLEN}</g>`,{n:2,dur:4,begin:1.2});
+ s+=F(wind(150,6),6)+flow("M84 236 C150 200 230 290 296 238",POLLEN,{n:6,dur:2.6,begin:6.2});
+ s+=T(200,40,"Con los insectos…",1.5)+T(200,420,"…o con el viento",6.2,{f:"#fff",st:"#3a2412"});
+ return {svg:s,cap:[[0,"El polen tiene que llegar al pistilo de otra flor."],[1.5,"La abeja visita una flor, se mancha de polen y lo lleva a la siguiente."],[6.2,"A veces es el viento el que transporta el polen."],[9,"A esto se le llama polinización."]]}},
+
+fruitform(){const g=440;let s=bg(g)+cloud(330,50,.7);const f=flowerParts();
+ s+=f.stem+f.caliz;
+ s+=`<g><animateTransform attributeName="transform" type="translate" from="0 0" to="0 260" begin="1.2s" dur="1.6s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".5 0 .8 1"/>${A.out(1.8,1)}${f.corola}</g>`;
+ s+=FO(f.estambres,1.8,.8)+FO(f.estilo,2.6,.8);
+ s+=`<g transform="translate(200 268)"><g><animateTransform attributeName="transform" type="scale" from="1" to="3.3" begin="3s" dur="2.2s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .8 .3 1"/><ellipse rx="18" ry="23" fill="#6cc04a" stroke="#3d7f2a" stroke-width="1.2"><animate attributeName="fill" from="#6cc04a" to="#e0322f" begin="3.6s" dur="1.6s" fill="freeze"/><animate attributeName="stroke" from="#3d7f2a" to="#9b1513" begin="3.6s" dur="1.6s" fill="freeze"/></ellipse><g opacity="0">${A.fade(5.6)}<path d="M0 -21 A15 21 0 0 1 0 21Z" fill="#ffe2b8"/>${[[4,-10],[7,-2],[4,6],[8,12]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.5" fill="#fff6d6" stroke="#c9a14b" stroke-width=".6"/>`).join("")}</g></g></g>`;
+ s+=T(200,60,"Los pétalos se caen",1.2)+T(320,140,"El ovario crece",3,{s:16})+T(200,395,"¡Un fruto con semillas!",5.6,{f:"#fff",st:"#3a2412"});
+ return {svg:s,cap:[[0,"Después de la polinización, la flor cambia."],[1.2,"Los pétalos y los estambres se caen."],[3,"El ovario crece y crece… ¡y se convierte en el fruto!"],[5.6,"Dentro están las semillas."]]}}
+};
+function buildScene(key){ID="s"+(++UID);const [n,v]=key.split(":");return SC[n](v===undefined?undefined:(isNaN(+v)?v:+v))}
+
+/* ================= Ilustraciones principales (800×500) ================= */
+let HSFN=null;
+function H(i,content){const h=L[cur].hs[i],[x,y,w,ht]=h.b;const [bx,by]=h.bp||[Math.min(x+w-8,785),Math.max(y+8,15)];
+ return `<g class="hot" data-i="${i}" tabindex="0" role="button" aria-label="${i+1}. ${h.t}"><g class="art">${content}</g><rect x="${x}" y="${y}" width="${w}" height="${ht}" fill="transparent"/><g class="badge" pointer-events="none"><circle class="ring" cx="${bx}" cy="${by}" r="13"/><circle class="b" cx="${bx}" cy="${by}" r="13"/><text x="${bx}" y="${by+5}" text-anchor="middle">${i+1}</text></g></g>`}
+const MAIN={
+tipos(){const g=340;let s=bg(g)+sun(52,52,22)+drift(cloud(250,40,.7),40,15);
+ // zona húmeda a la derecha
+ s+=`<path d="M575 ${g-4} L575 140 C620 110 700 100 820 120 L820 ${g+200} L575 ${g+200}Z" fill="#cfe3d8" opacity=".9"/>`;
+ [[600,150],[650,135],[705,128],[760,138],[805,150]].forEach(([x,y],i)=>s+=`<path d="M${x} ${g} L${x} ${y+40} M${x-28} ${g} C${x-30} ${y+60} ${x-8} ${y} ${x} ${y} C${x+8} ${y} ${x+30} ${y+60} ${x+28} ${g}Z" fill="${i%2?'#6f9f83':'#5f907a'}" opacity=".75"/>`);
+ s+=`<rect x="575" y="${g-4}" width="260" height="200" fill="#5c7d43"/><rect x="575" y="${g-6}" width="260" height="8" fill="#4e8a3a"/>`;
+ s+=`<path d="M560 520 C620 470 700 440 830 430 L830 520Z" fill="#6fb6e6"/><path d="M600 500 q30 -8 60 -2 M680 470 q30 -8 60 -2" stroke="#d9f0ff" stroke-width="3" fill="none"><animate attributeName="stroke-dashoffset" from="0" to="40" dur="2s" repeatCount="indefinite"/></path>`;
+ // cartel
+ s+=H(0,`<rect x="396" y="70" width="8" height="${g-70}" fill="#8a5a33"/><rect x="300" y="28" width="200" height="66" rx="12" fill="#f6dda5" stroke="#a87638" stroke-width="3.5"/><text x="400" y="56" text-anchor="middle" font-size="19" font-weight="800" fill="#5a3a12" style="font-family:var(--display)">¿Con semillas</text><text x="400" y="80" text-anchor="middle" font-size="19" font-weight="800" fill="#5a3a12" style="font-family:var(--display)">o sin semillas?</text>`);
+ s+=H(3,`<g>${A.sway(75,g,1,6)}${ART.olivo(75,g,1.15)}</g>`);
+ s+=H(1,`<g>${A.sway(195,g,1,5)}${ART.naranjo(195,g,1.15)}</g>`);
+ s+=H(2,`<g>${A.sway(295,g,3,3.4)}${ART.azafran(295,g,1)}</g>`);
+ s+=H(4,`<g>${A.sway(380,g,1,6)}${ART.pino(380,g,1.12)}</g>`);
+ s+=H(6,`<g>${A.sway(462,g,1.2,5)}${ART.cipres(462,g,1.05)}</g>`);
+ s+=H(5,`<g>${A.sway(530,g,1,5.5)}${ART.abeto(530,g,1)}</g>`);
+ s+=H(7,ART.musgo(640,428,1.15));
+ s+=H(8,`<g>${A.sway(735,g,2,4)}${ART.helecho(735,g,1.05)}</g>`);
+ s+=H(9,`<path d="M70 432 L230 432 L214 482 L86 482Z" fill="#c9934f" stroke="#8f5f2c" stroke-width="3"/>${[100,130,160,190].map(x=>`<path d="M${x} 434 l4 46" stroke="#a87638" stroke-width="2"/>`).join("")}<g>${ART.wheatPlant(100,436,.45)}${ART.wheatPlant(112,436,.42)}</g>${ART.zucchini(150,424,48,-12)}${ART.apple(196,420,13)}${ART.orangeFruit(176,428,12)}${ART.tomato(214,428,11)}`);
+ return s},
+como(){const g=300;let s=bg(g)+pebbles(g,[[30,60],[250,150],[590,40],[700,120],[110,170],[470,185],[780,30]])+drift(cloud(250,60,.9),50,16)+drift(cloud(560,40,.7),-40,13)+sun(40,40,22);
+ s+=H(7,`<g>${A.sway(720,g,1,6)}${tree(720,g,150,1)}</g>`);
+ s+=H(8,`<g>${A.sway(640,g,1.5,5)}${shrub(640,g,1.15)}</g>`);
+ s+=H(6,[[35,78,3.4],[65,96,4],[100,82,3],[132,70,3.7]].map(([x,h,d])=>`<g>${A.sway(x,g,6,d)}${herb(x,g,h,1)}</g>`).join(""));
+ s+=H(3,`<g>${A.sway(200,g,2.5,4.2)}${dandelion(200,g,.95)}</g>${rootsMain(200,g,0,.85,false,1.6)}`);
+ s+=H(4,`<g>${A.sway(290,g,3,3.2)}${wheat(290,g,.95)}</g>${rootsFasc(290,g,0,.85,false)}`);
+ s+=H(5,`<g>${A.sway(540,g,3,3.8)}${carrotLeaves(540,g,1)}</g>${carrotRoot(540,g,.95)}`);
+ const p=plantParts(420,g,220,{ll:72,fr:30,sw:9});
+ s+=H(2,rootsMain(420,g,0,1.2,false));
+ s+=`<g>${A.sway(420,g,1.6,4)}${H(0,p.leaves)}${H(1,p.stem)}${p.flower}</g>`;
+ return s},
+nutri(){const g=340;let s=defs(`<linearGradient id="${ID}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#79c4f1"/><stop offset="1" stop-color="#e2f4fd"/></linearGradient><linearGradient id="${ID}n" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1534"/><stop offset="1" stop-color="#34497f"/></linearGradient><linearGradient id="${ID}so" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93603a"/><stop offset="1" stop-color="#583720"/></linearGradient>`);
+ s+=`<rect x="-400" y="-400" width="800" height="${400+g}" fill="url(#${ID}d)"/><rect x="400" y="-400" width="800" height="${400+g}" fill="url(#${ID}n)"/><rect x="-400" y="${g}" width="1600" height="500" fill="url(#${ID}so)"/><rect x="-400" y="${g-5}" width="1600" height="10" fill="#5fae4f"/>`;
+ s+=stars([[450,40],[520,90],[600,30],[770,120],[560,170],[760,40],[470,200]])+T(200,30,"DE DÍA",null,{s:15})+T(600,30,"DE NOCHE",null,{s:15,f:"#fff",st:"#0b1534"});
+ s+=pebbles(g,[[60,60],[200,130],[520,70],[700,120],[620,30]]);
+ s+=H(1,sun(75,70,30));
+ s+=H(9,moon(700,72,"#1c2c5c"));
+ s+=H(2,drift(CO2.replace('<g>','<g transform="translate(190 140) scale(1.6)">'),18,6)+flow("M240 150 C280 160 300 175 320 190",`<circle r="3" fill="#97a3ab"/>`,{n:3,dur:2.5}));
+ s+=H(3,sign(110,290,g,"¿Qué|necesita?"));
+ s+=H(4,sign(235,290,g,"¿Qué|obtiene?"));
+ s+=H(11,sign(530,290,g,"Día y|noche"));
+ s+=H(10,`<g>${A.bob(3,1.4)}${rabbit(650,g,1)}</g>`);
+ s+=H(6,[[290,400],[320,430],[350,395],[305,455],[345,450]].map(([x,y])=>`<g transform="translate(${x} ${y}) scale(1.4)">${DROP}</g>`).join("")+flow("M320 425 C350 390 380 365 398 345",`<circle r="3" fill="${C.water}"/>`,{n:3,dur:2.4}));
+ s+=rootsMain(400,g,0,1.05,false);
+ s+=`<path d="M400 ${g} L400 125" stroke="${C.stem}" stroke-width="26" stroke-linecap="round"/><path d="M400 ${g} L400 125" stroke="#7ccb72" stroke-width="18" stroke-linecap="round"/>`;
+ s+=leaf(400,160,55,215)+leaf(400,150,55,-35)+daisy(400,120,22);
+ s+=H(0,leaf(400,232,108,198,{wd:.42}));
+ s+=leaf(400,198,108,-20,{wd:.42});
+ s+=H(7,`<path d="M391 330 L391 250" stroke="${C.water}" stroke-width="7" stroke-dasharray="10 6"><animate attributeName="stroke-dashoffset" from="0" to="32" dur="1s" repeatCount="indefinite"/></path>${arrowHead(391,242,-90,C.water,10)}`);
+ s+=H(8,`<path d="M409 250 L409 330" stroke="#2b8a2f" stroke-width="7" stroke-dasharray="10 6"><animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" repeatCount="indefinite"/></path>${arrowHead(409,338,90,"#2b8a2f",10)}`);
+ s+=H(5,`<g>${A.bob(3,2)}${magnifier(300,140,22,cells(300,140,22),`${ID}lp`)}</g>`);
+ return s},
+hojas(){let s=paper("#e6f4de")+grid();const P=rotP(215,345,-60);
+ s+=`<path d="M-30 480 Q120 410 345 330" stroke="#8a5a33" stroke-width="15" fill="none" stroke-linecap="round"/>`+leaf(300,345,46,-110,{wd:.42})+leaf(80,440,40,-130,{wd:.42});
+ s+=H(0,sun(80,80,30)+T(80,145,"¿Qué hacen?",null,{s:15}));
+ let veins=`M215 345 L${P(180,0)}`;[.25,.45,.65].forEach(t=>{const w=190*.42*Math.sin(Math.PI*t)*.75;veins+=` M${P(190*t,0)} L${P(190*t+30,-w*.85)} M${P(190*t,0)} L${P(190*t+30,w*.85)}`});
+ s+=H(1,`<path d="${leafAbs(215,345,190,-60,.42)}" fill="${C.leaf}" stroke="${C.leafD}" stroke-width="3"/>${PS(veins,C.leafD,2)}`);
+ s+=H(2,`<path d="M178 392 L215 345" stroke="#4e9d3c" stroke-width="9" stroke-linecap="round"/>`);
+ s+=H(3,`<g>${A.bob(3,2.2)}${magnifier(345,240,24,cells(345,240,24),`${ID}lh`)}</g>`);
+ s+=`<rect x="388" y="16" width="404" height="470" rx="18" fill="#d9b27c" stroke="#a87638" stroke-width="5"/><text x="590" y="50" text-anchor="middle" font-size="22" font-weight="800" fill="#4a2f10" style="font-family:var(--display)">Mi colección de hojas</text>`;
+ const names=Object.keys(SHAPES),cx=[436,532,628,724];
+ names.forEach((n,i)=>{const x=cx[i%4],y=i<4?132:248,k=.27;s+=H(4+i,`<rect x="${x-45}" y="${y-60}" width="90" height="112" rx="10" fill="#fffdf5" stroke="#e1cfa8" stroke-width="2"/><circle cx="${x}" cy="${y-52}" r="5" fill="#d6453d"/><g transform="translate(${x-200*k} ${y-6-200*k}) scale(${k})">${shapeStatic(n)}</g><text x="${x}" y="${y+44}" text-anchor="middle" font-size="12.5" font-weight="800" fill="#3a2a10" style="font-family:var(--display)">${SHAPE_NAMES[n]}</text>`)});
+ s+=`<text x="590" y="330" text-anchor="middle" font-size="16" font-weight="800" fill="#4a2f10" style="font-family:var(--display)">Bordes</text>`;
+ ["lisa","dentada","lobulada"].forEach((n,i)=>{const x=[462,590,718][i],y=400,k=.33;s+=H(12+i,`<rect x="${x-60}" y="${y-58}" width="120" height="104" rx="10" fill="#fffdf5" stroke="#e1cfa8" stroke-width="2"/><circle cx="${x}" cy="${y-50}" r="5" fill="#d6453d"/><g transform="translate(${x-200*k} ${y-10-200*k}) scale(${k})">${edgeStatic(n)}</g><text x="${x}" y="${y+38}" text-anchor="middle" font-size="13" font-weight="800" fill="#3a2a10" style="font-family:var(--display)">${EDGE_NAMES[n]}</text>`)});
+ return s},
+fruto(){let s=paper("#e4f1ea")+`<rect x="-200" y="212" width="1200" height="18" fill="#b07a47"/><rect x="-200" y="468" width="1200" height="40" fill="#b07a47"/>`;
+ s+=H(0,apple(80,152,28)+orange(132,140,27)+peach(182,150,26)+strawberry(222,148,16)+`<path d="M38 165 L242 165 L222 212 L58 212Z" fill="#c9934f" stroke="#8f5f2c" stroke-width="3"/>${[60,90,120,150,180,210].map(x=>`<path d="M${x} 168 L${x+6} 210" stroke="#a87638" stroke-width="2"/>`).join("")}<path d="M42 180 L238 180 M48 196 L232 196" stroke="#a87638" stroke-width="2"/>`+T(140,240,"Frutos carnosos",null,{s:15}));
+ s+=H(1,walnut(305,168,20)+almond(345,170,17)+hazelnut(385,168,15)+pipa(420,170,11)+walnut(450,172,15)+almond(330,186,14)+hazelnut(410,190,12)+`<path d="M268 180 Q375 245 482 180Z" fill="#6d9bc3" stroke="#4a77a0" stroke-width="3"/>`+T(375,240,"Frutos secos",null,{s:15}));
+ s+=H(2,`<g transform="translate(${552-60} ${110-60}) scale(.3)"><path d="${KIDNEY}" fill="#f4ead2" stroke="#b49460" stroke-width="7"/><ellipse cx="140" cy="203" rx="9" ry="13" fill="#6b4422"/></g>`+T(552,152,"Semilla",null,{s:13}));
+ s+=H(5,judia(526,188,11)+pipa(552,188,7)+maiz(578,188,9)+lenteja(603,190,8));
+ const B=beanSection();
+ s+=`<g transform="translate(${700-130} ${118-130}) scale(.65)">${B.coat}</g>`;
+ s+=H(4,`<ellipse cx="720" cy="150" rx="32" ry="45" fill="#ffe9a8" opacity=".01"/>`);
+ s+=H(3,`<g transform="translate(${700-130} ${118-130}) scale(.65)">${B.embryo}</g>`);
+ [110,300,490,680].forEach((x,i)=>{const jar=`<rect x="${x-62}" y="268" width="124" height="198" rx="16" fill="#e8f6ff" stroke="#9cc3dc" stroke-width="3"/><rect x="${x-58}" y="330" width="116" height="132" rx="12" fill="#8d5b36"/><rect x="${x-58}" y="327" width="116" height="7" fill="#5fae4f"/><circle cx="${x-36}" cy="${290}" r="13" fill="#2b7a3d"/><text x="${x-36}" y="295" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" style="font-family:var(--display)">${i+1}</text>`;
+  let st=`<ellipse cx="${x}" cy="372" rx="15" ry="10" fill="#f4ead2" stroke="#a5824c" stroke-width="2"/>`;
+  if(i===0)st+=[[-20,300],[0,312],[20,298]].map(([d,y])=>`<g transform="translate(${x+d} ${y})">${A.bob(4,1.4)}${DROP}</g>`).join("");
+  if(i>=1)st+=PS(`M${x+4} 380 C${x+6} 400 ${x+3} 420 ${x+7} ${i>2?452:440}`,C.root,3.5);
+  if(i>=2)st+=PS(`M${x} 362 C${x+3} 345 ${x-3} 320 ${x} ${i>2?290:305}`,C.stem,4.5)+leaf(x,i>2?318:305,22,-35)+leaf(x,i>2?318:305,22,215);
+  if(i===3)st+=leaf(x,300,26,-25)+leaf(x,292,22,205)+PS(`M${x+6} 410 Q${x+20} 425 ${x+30} 445`,C.root,2.5)+PS(`M${x+5} 425 Q${x-12} 440 ${x-20} 455`,C.root,2.5);
+  s+=H(6+i,jar+`<g>${i>=2?A.sway(x,330,3,3):""}${st}</g>`);
+  if(i<3)s+=`<path d="M${x+68} 365 L${x+120} 365" stroke="#2b7a3d" stroke-width="5" stroke-linecap="round"/>`+arrowHead(x+126,365,0,"#2b7a3d",10)});
+ return s},
+repro(){const g=470;let s=bg(g)+drift(cloud(380,50,.7),-40,14)+cloud(70,40,.6);const f=flowerParts();
+ const X=v=>v*1.1-10,Y=v=>v*1.1-40,TF=`transform="translate(-10 -40) scale(1.1)"`;
+ s+=`<path d="M210 440 L210 470" stroke="${C.stem}" stroke-width="11"/>`+`<g ${TF}>${f.stem}</g>`;
+ s+=H(4,`<g ${TF}>${f.corola}</g>`);
+ s+=H(5,`<g ${TF}>${f.caliz}</g>`);
+ s+=H(2,`<g ${TF}>${f.estambres}</g>`);
+ s+=H(0,`<g ${TF}>${f.estilo}</g>`);
+ s+=H(1,`<g ${TF}>${f.ovario}</g>`);
+ s+=H(3,line(X(235),Y(175)-12,330,120,"#5a5a5a",2,"5 4")+magnifier(360,105,38,[[345,95],[372,88],[358,118],[380,116]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="8" fill="#ffd21f" stroke="#c99a10" stroke-width="2" stroke-dasharray="3 2"/>`).join(""),`${ID}rp`));
+ s+=`<g><animateMotion path="M300 230 C400 120 160 40 110 180 C70 300 260 330 300 230Z" dur="10s" repeatCount="indefinite"/>${bee()}</g>`;
+ const CEN=[[530,130],[715,130],[715,345],[530,345]];
+ const ar=(x1,y1,x2,y2,ang)=>`<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#2b7a3d" stroke-width="5" stroke-linecap="round"/>`+arrowHead(x2,y2,ang,"#2b7a3d",11);
+ s+=ar(610,130,632,130,0)+ar(715,210,715,262,90)+ar(634,345,612,345,180)+ar(530,265,530,214,-90);
+ const mini=(cx,cy)=>`<g transform="translate(${cx-60} ${cy-88}) scale(.3)">${f.stem}${f.caliz}${f.corola}${f.estambres}${f.estilo}${f.ovario}</g>`;
+ CEN.forEach(([cx,cy],i)=>{let c=`<clipPath id="${ID}k${i}"><circle cx="${cx}" cy="${cy}" r="76"/></clipPath><circle cx="${cx}" cy="${cy}" r="76" fill="#fffdf5" stroke="#2b7a3d" stroke-width="4"/><g clip-path="url(#${ID}k${i})">`;
+  if(i===0)c+=mini(cx,cy)+flow(`M${cx-10} ${cy-38} C${cx-30} ${cy-60} ${cx-40} ${cy-70} ${cx-50} ${cy-80}`,POLLEN,{n:3,dur:2.2})+flow(`M${cx+10} ${cy-38} C${cx+30} ${cy-60} ${cx+40} ${cy-70} ${cx+50} ${cy-80}`,POLLEN,{n:3,dur:2.4});
+  if(i===1)c+=mini(cx,cy)+`<g transform="translate(${cx+22} ${cy-50}) scale(.8)">${A.bob(5,1.1)}${bee()}</g>`;
+  if(i===2)c+=`<path d="M${cx} ${cy-50} q-4 -14 6 -20" stroke="#2b7a3d" stroke-width="5" fill="none"/>${leaf(cx,cy-48,22,200,{fill:"#4f9d45",wd:.3})}${leaf(cx,cy-48,22,-20,{fill:"#4f9d45",wd:.3})}<path d="M${cx-38} ${cy-30} C${cx-50} ${cy+20} ${cx-20} ${cy+55} ${cx} ${cy+55} C${cx+20} ${cy+55} ${cx+50} ${cy+20} ${cx+38} ${cy-30} C${cx+20} ${cy-48} ${cx-20} ${cy-48} ${cx-38} ${cy-30}Z" fill="#e0322f" stroke="#9b1513" stroke-width="3"/><path d="M${cx} ${cy-44} C${cx+40} ${cy-40} ${cx+40} ${cy+50} ${cx} ${cy+53}Z" fill="#ffe2b8"/>${[[12,-20],[20,-4],[14,12],[22,26]].map(([a,b])=>`<ellipse cx="${cx+a}" cy="${cy+b}" rx="4" ry="2.6" fill="#fff6d6" stroke="#c9a14b"/>`).join("")}`;
+  if(i===3)c+=`<rect x="${cx-80}" y="${cy+20}" width="160" height="70" fill="#8d5b36"/><rect x="${cx-80}" y="${cy+17}" width="160" height="7" fill="#5fae4f"/><ellipse cx="${cx-10}" cy="${cy+40}" rx="12" ry="8" fill="#f4ead2" stroke="#a5824c" stroke-width="2"/>${PS(`M${cx} ${cy+45} C${cx+2} ${cy+60} ${cx-3} ${cy+70} ${cx+2} ${cy+82}`,C.root,3)}<g>${A.sway(cx,cy+20,4,3)}${PS(`M${cx} ${cy+20} C${cx+3} ${cy} ${cx-3} ${cy-20} ${cx} ${cy-40}`,C.stem,5)}${leaf(cx,cy-30,30,-30)}${leaf(cx,cy-30,30,210)}</g>`;
+  c+=`</g><circle cx="${cx-56}" cy="${cy-56}" r="15" fill="#2b7a3d"/><text x="${cx-56}" y="${cy-50}" text-anchor="middle" font-size="16" font-weight="800" fill="#fff" style="font-family:var(--display)">${i+1}</text>`;
+  s+=H(6+i,c)});
+ return s}
+};
+
+/* ================= Contenidos ================= */
+const L=[
+{id:"como",tab:"Cómo son",titulo:"Cómo son las plantas",
+ intro:"¡Hola! Soy Semi. Las plantas tienen <strong>raíz, tallo y hojas</strong>, y cada parte tiene un trabajo. Toca lo que brilla.",
+ hs:[
+ {t:"Las hojas",b:[350,95,145,145],s:"photo:basic",p:["Las hojas salen del tallo. Son verdes y planas.","Son la <strong>cocina de la planta</strong>: allí se <strong>fabrica el alimento</strong> usando la <strong>luz del Sol</strong>."],k:["Fabrican el alimento","Necesitan la luz del Sol"]},
+ {t:"El tallo",b:[404,80,32,220],s:"sap:both",p:["El tallo tiene dos trabajos: <strong>sostiene</strong> la planta para que esté derecha y <strong>transporta</strong> el agua y otras sustancias a todas sus partes.","Suele dividirse en <strong>ramas</strong>. Puede ser <strong>fino y blando</strong> o <strong>duro y rígido</strong>."],k:["Sostiene la planta","Transporta agua y sustancias","Se divide en ramas"],f:"Si pones un clavel blanco en agua con colorante, en unos días los pétalos cambian de color: es el tallo transportando el agua.",d:"Experimento del clavel o del apio con colorante para hacer visible el transporte por el tallo."},
+ {t:"La raíz",b:[340,300,160,175],s:"root:general",p:["La raíz está <strong>bajo tierra</strong>.","<strong>Sujeta</strong> la planta al terreno y <strong>absorbe</strong> del suelo el agua y otras sustancias, como las sales minerales."],k:["Sujeta la planta","Absorbe agua y sales","Está bajo tierra"],f:"Las raíces de algunos árboles ocupan bajo tierra más espacio que su copa."},
+ {t:"Raíz principal",b:[155,170,90,235],s:"root:principal",p:["El diente de león tiene una <strong>raíz principal</strong>: una raíz <strong>gruesa</strong> que crece hacia abajo.","De ella salen otras raíces <strong>más pequeñas</strong>."],k:["Una raíz gruesa","Otras pequeñas que salen de ella"]},
+ {t:"Raíces pequeñas y numerosas",b:[250,160,80,245],s:"root:fasc",p:["El trigo tiene <strong>muchas raíces finas</strong> y <strong>parecidas entre sí</strong>. No hay una más gruesa que las demás.","Juntas parecen una cabellera."],k:["Muchas raíces finas","Todas parecidas"],f:"El césped también tiene este tipo de raíces. Por eso sujeta tan bien la tierra cuando llueve."},
+ {t:"Raíces de reserva",b:[505,225,75,210],s:"root:reserva",p:["La zanahoria y la remolacha tienen <strong>raíces de reserva</strong>: son <strong>gruesas</strong> porque <strong>almacenan alimento</strong> para cuando la planta lo necesite.","Algunas son <strong>comestibles</strong>. ¡Cuando comes zanahoria estás comiendo una raíz!"],k:["Guardan alimento","Son gruesas","Algunas se comen"],d:"Error frecuente: la patata no es una raíz, sino un tallo subterráneo (tubérculo)."},
+ {t:"Tallos herbáceos",b:[18,190,140,115],s:"herb",p:["Las <strong>hierbas</strong> tienen tallos herbáceos.","Son <strong>finos, blandos y flexibles</strong>, y normalmente de color <strong>verde</strong>."],k:["Finos y blandos","Verdes","Plantas: hierbas"]},
+ {t:"El árbol",b:[648,50,150,252],s:"wood:tree",p:["Los árboles tienen un <strong>tallo leñoso</strong>, <strong>duro y rígido</strong>, que se llama <strong>tronco</strong>.","En los árboles el tronco es <strong>alto</strong> y las ramas crecen <strong>alejadas del suelo</strong>."],k:["Tallo leñoso: duro y rígido","Tronco alto","Ramas lejos del suelo"],f:"Contando los anillos del tronco se puede saber la edad de un árbol: se forma uno cada año."},
+ {t:"El arbusto",b:[595,215,95,88],s:"wood:shrub",p:["Los arbustos también tienen <strong>tallo leñoso</strong>.","Pero su tronco es <strong>muy corto</strong> y las ramas salen <strong>cerca del suelo</strong>."],k:["Tallo leñoso","Tronco muy corto","Ramas cerca del suelo"]}
+ ]},
+{id:"nutri",tab:"Nutrición",titulo:"La nutrición de las plantas",
+ intro:"Las plantas <strong>fabrican su propio alimento</strong>. Con la <strong>fotosíntesis</strong> hacen la comida y con la <strong>respiración</strong> consiguen energía. ¡Mira el día y la noche!",
+ hs:[
+ {t:"La fotosíntesis",b:[290,175,115,70],s:"photo:basic",p:["La fotosíntesis es cómo las <strong>hojas fabrican su alimento</strong> usando la <strong>luz del Sol</strong>.","Las plantas no necesitan comer a otros seres vivos: <strong>se hacen su propia comida</strong>."],k:["En las hojas","Con la luz del Sol"],d:"Conviene introducir que las plantas son seres autótrofos frente a los animales, heterótrofos."},
+ {t:"La luz del Sol",b:[25,20,105,105],s:"photo:sun",p:["La <strong>luz del Sol</strong> da a las hojas la <strong>energía</strong> para hacer la fotosíntesis.","Sin luz, la planta no puede fabricar alimento."],k:["Es la energía de la fotosíntesis"],f:"Una planta guardada a oscuras se vuelve amarillenta y alargada, buscando la luz."},
+ {t:"Gases del aire",b:[140,105,190,90],s:"photo:gases",p:["Por las hojas <strong>entra dióxido de carbono</strong> (CO₂) del aire.","Y durante la fotosíntesis las hojas <strong>expulsan oxígeno</strong> (O₂): ¡el que respiramos!"],k:["Entra CO₂","Sale O₂"]},
+ {t:"¿Qué necesita?",b:[52,256,116,86],s:"photo:needs",p:["Para la fotosíntesis la planta necesita:","☀️ <strong>Luz del Sol</strong><br>☁️ <strong>Dióxido de carbono</strong> del aire<br>💧 <strong>Agua y sales minerales</strong> del suelo"],k:["Luz","Dióxido de carbono","Agua y sales minerales"]},
+ {t:"¿Qué obtiene?",b:[177,256,116,86],s:"photo:gets",p:["Con la fotosíntesis la planta obtiene:","🍬 <strong>Alimento</strong>: la <strong>savia elaborada</strong><br>🫧 <strong>Oxígeno</strong>, que expulsa al aire"],k:["Alimento (savia elaborada)","Oxígeno"]},
+ {t:"La clorofila",b:[268,108,64,64],s:"chloro",p:["La <strong>clorofila</strong> es una sustancia <strong>verde</strong> que hay en las hojas.","<strong>Capta la luz del Sol</strong> y da el color verde a las hojas."],k:["Es verde","Capta la luz"],f:"En otoño algunos árboles pierden la clorofila de sus hojas y aparecen otros colores: amarillos, naranjas, rojos."},
+ {t:"Agua y sales minerales",b:[270,375,110,100],s:"root:water",p:["La raíz absorbe del suelo el <strong>agua</strong> y las <strong>sales minerales</strong>.","Son uno de los ingredientes de la fotosíntesis."],k:["Están en el suelo","Las absorbe la raíz"]},
+ {t:"Savia bruta",b:[378,235,24,105],bp:[362,300],s:"sap:bruta",p:["El agua y las sales que absorbe la raíz forman la <strong>savia bruta</strong>.","La savia bruta <strong>sube desde la raíz</strong> por el tallo hasta las hojas."],k:["Agua + sales minerales","Sube desde la raíz"]},
+ {t:"Savia elaborada",b:[398,235,24,105],bp:[438,300],s:"sap:elab",p:["En las hojas se fabrica la <strong>savia elaborada</strong>: es el <strong>alimento</strong> de la planta.","La savia elaborada <strong>se reparte por toda la planta</strong>."],k:["Es el alimento","Va a toda la planta"]},
+ {t:"La respiración",b:[650,25,100,100],s:"resp:night",p:["Las plantas también <strong>respiran</strong>. Usan el <strong>oxígeno</strong> del aire para obtener la <strong>energía</strong> que necesitan para vivir.","Respiran <strong>por todas sus partes</strong> y expulsan <strong>dióxido de carbono</strong>."],k:["Toman oxígeno","Obtienen energía","Expulsan CO₂"],d:"Las plantas respiran día y noche. De día la fotosíntesis produce más oxígeno del que gasta la respiración, por eso solo se nota de noche. Conviene matizarlo para evitar la idea errónea de que solo respiran de noche."},
+ {t:"Plantas y animales",b:[605,272,110,72],s:"resp:compare",p:["Las plantas respiran, pero <strong>consumen menos oxígeno que los animales</strong>.","No corren ni saltan, así que necesitan menos energía."],k:["Consumen poco oxígeno"]},
+ {t:"Día y noche",b:[472,256,116,86],s:"daynight",p:["<strong>De día</strong>: fotosíntesis → fabrican su alimento.","<strong>De noche</strong>: solo respiración → obtienen energía para vivir."],k:["Fotosíntesis = alimento","Respiración = energía"],d:"Tabla de dos columnas (necesita / obtiene / dónde / cuándo) para comparar ambos procesos."}
+ ]},
+{id:"hojas",tab:"Las hojas",titulo:"Las hojas",
+ intro:"Pequeñas, pero muy importantes. Descubre las <strong>partes de la hoja</strong> y mira mi <strong>colección</strong>: ¡hay hojas de muchas formas y bordes!",
+ hs:[
+ {t:"¿Qué hacen las hojas?",b:[30,30,105,125],s:"photo:basic",p:["Las hojas <strong>fabrican el alimento</strong> de la planta mediante la <strong>fotosíntesis</strong>.","Para ello usan la luz del Sol, el agua y el dióxido de carbono. Son de color <strong>verde</strong>."],k:["Fabrican el alimento","Fotosíntesis","Color verde"]},
+ {t:"El limbo",b:[205,160,140,195],s:"leafparts:limbo",p:["El <strong>limbo</strong> es la <strong>parte ancha y plana</strong> de la hoja.","Las líneas que ves son los <strong>nervios</strong>, por donde viaja la savia."],k:["Parte ancha y plana"]},
+ {t:"El pecíolo",b:[165,335,62,70],s:"leafparts:peciolo",p:["El <strong>pecíolo</strong> es el rabito: la parte que <strong>une la hoja al tallo o a la rama</strong>."],k:["Une la hoja al tallo"]},
+ {t:"¿Por qué son verdes?",b:[315,210,70,70],s:"chloro",p:["Las hojas suelen ser verdes porque contienen <strong>clorofila</strong>, que capta la luz del Sol."],k:["Clorofila = color verde"]},
+ {t:"Redondeada",b:[391,72,90,112],s:"shape:redondeada",p:["Hoja <strong>casi redonda</strong>, como un círculo. Ejemplo: el álamo temblón."],k:["Como un círculo"]},
+ {t:"Ovalada",b:[487,72,90,112],s:"shape:ovalada",p:["Hoja con forma de <strong>óvalo</strong>, como un huevo. Ejemplo: el naranjo."],k:["Como un huevo"]},
+ {t:"Triangular",b:[583,72,90,112],s:"shape:triangular",p:["Hoja con forma de <strong>triángulo</strong>. Ejemplo: el chopo."],k:["Como un triángulo"]},
+ {t:"Palmeada",b:[679,72,90,112],s:"shape:palmeada",p:["Parece una <strong>mano abierta</strong>. Ejemplo: el castaño de Indias."],k:["Como una mano"]},
+ {t:"Lineal",b:[391,188,90,112],s:"shape:lineal",p:["Hoja <strong>larga y estrecha</strong>. Ejemplo: el trigo o el césped."],k:["Larga y estrecha"]},
+ {t:"En aguja",b:[487,188,90,112],s:"shape:aguja",p:["Hojas <strong>muy finas y puntiagudas</strong>, como agujas. Ejemplo: el pino."],k:["Fina como una aguja"],f:"Como son tan finas pierden poca agua: por eso los pinos aguantan bien el frío y la sequía."},
+ {t:"Acorazonada",b:[583,188,90,112],s:"shape:acorazonada",p:["Hoja con forma de <strong>corazón</strong>. Ejemplo: el tilo."],k:["Como un corazón"]},
+ {t:"Lanceolada",b:[679,188,90,112],s:"shape:lanceolada",p:["Hoja con forma de <strong>punta de lanza</strong>: alargada y acabada en punta. Ejemplo: el sauce."],k:["Como una lanza"]},
+ {t:"Borde liso",b:[402,342,120,104],s:"edge:lisa",p:["El borde es <strong>liso</strong>, <strong>sin dientes</strong>. Ejemplo: el laurel."],k:["Sin dientes"]},
+ {t:"Borde dentado",b:[530,342,120,104],s:"edge:dentada",p:["El borde <strong>tiene dientes</strong>, como una sierra. Ejemplo: el rosal."],k:["Con dientes"]},
+ {t:"Borde lobulado",b:[658,342,120,104],s:"edge:lobulada",p:["El borde <strong>tiene lóbulos</strong>: entrantes y salientes redondeados. Ejemplo: el roble."],k:["Con lóbulos"],d:"Salida al patio: recoger hojas y clasificarlas por forma y por borde en un mural o herbario."}
+ ]},
+{id:"fruto",tab:"Fruto y semilla",titulo:"El fruto y la semilla",
+ intro:"El <strong>fruto</strong> transporta una o varias <strong>semillas</strong>. ¡Y de cada semilla puede nacer una nueva planta!",
+ hs:[
+ {t:"Frutos carnosos",b:[30,105,220,145],s:"fruit:carnoso",p:["Son <strong>jugosos</strong> porque tienen <strong>mucha agua</strong> en su interior.","Ejemplos: <strong>manzana, naranja, fresa y melocotón</strong>."],k:["Mucha agua","Jugosos"],f:"Cuando los animales se los comen, llevan las semillas lejos de la planta madre."},
+ {t:"Frutos secos",b:[262,140,226,110],s:"fruit:seco",p:["Tienen <strong>poca agua</strong> en su interior.","Ejemplos: <strong>nuez, pipa de girasol, almendra y avellana</strong>."],k:["Poca agua"]},
+ {t:"La semilla",b:[515,70,75,92],s:"seed:all",p:["La semilla contiene una <strong>plantita muy pequeña</strong>, llamada <strong>embrión</strong>, y <strong>alimentos</strong>."],k:["Embrión","Alimentos"]},
+ {t:"El embrión",b:[645,45,50,70],s:"seed:embrion",p:["El <strong>embrión</strong> es la <strong>futura planta</strong>, en miniatura."],k:["Futura planta"]},
+ {t:"Los alimentos",b:[690,95,62,110],s:"seed:food",p:["La semilla guarda <strong>alimentos</strong>. El embrión los usa para crecer cuando empieza a germinar."],k:["Reserva para crecer"]},
+ {t:"Semillas que conoces",b:[512,170,104,38],s:"seeds",p:["<strong>Judía, pipa de girasol, maíz y lenteja</strong> son semillas.","<strong>Cada semilla puede dar una nueva planta.</strong>"],k:["Cada semilla, una planta"],d:"Germinar judías o lentejas en un vaso con algodón húmedo y registrar los cambios cada día."},
+ {t:"1. La semilla en la tierra",b:[45,262,130,210],s:"germ:1",p:["La semilla <strong>cae al suelo</strong> y encuentra <strong>humedad</strong>."],k:["Cae al suelo","Encuentra humedad"]},
+ {t:"2. La semilla germina",b:[235,262,130,210],s:"germ:2",p:["La semilla <strong>se abre</strong> y <strong>sale la raíz</strong>."],k:["Se abre","Sale la raíz"]},
+ {t:"3. Aparece la plantita",b:[425,262,130,210],s:"germ:3",p:["Crecen el <strong>tallo</strong> y las <strong>primeras hojas</strong>."],k:["Crece el tallo","Primeras hojas"]},
+ {t:"4. Una nueva planta",b:[615,262,130,210],s:"germ:4",p:["La plantita <strong>sigue creciendo</strong> y se convierte en una <strong>planta</strong>."],k:["Sigue creciendo"]}
+ ]},
+{id:"repro",tab:"Reproducción",titulo:"Las plantas se reproducen",
+ intro:"Las plantas se reproducen por medio de las <strong>flores</strong>, que forman los <strong>frutos</strong> y las <strong>semillas</strong>. ¡De la flor al fruto… y una nueva vida!",
+ hs:[
+ {t:"El pistilo",b:[190,110,40,130],bp:[240,112],s:"flower:pistilo",p:["El <strong>pistilo</strong> es la <strong>parte femenina</strong> de la flor.","Tiene el <strong>ovario</strong>."],k:["Parte femenina","Tiene el ovario"]},
+ {t:"El ovario",b:[186,232,48,56],s:"flower:ovario",p:["El <strong>ovario</strong> está <strong>dentro del pistilo</strong>.","Más adelante se convertirá en el <strong>fruto</strong>."],k:["Dentro del pistilo","Se convierte en fruto"]},
+ {t:"Los estambres",b:[160,118,36,150],bp:[150,150],s:"flower:estambres",p:["Los <strong>estambres</strong> son la <strong>parte masculina</strong> de la flor.","<strong>Producen el polen</strong>."],k:["Parte masculina","Producen el polen"]},
+ {t:"El polen",b:[315,62,90,90],s:"flower:polen",p:["El <strong>polen</strong> es un polvillo amarillo que se forma en los estambres.","Es necesario para que se formen las semillas."],k:["Polvillo amarillo"],f:"El polen que viaja por el aire causa muchas alergias en primavera."},
+ {t:"La corola",b:[238,195,100,105],s:"flower:corola",p:["La <strong>corola</strong> es el <strong>conjunto de pétalos</strong>.","Suele ser de <strong>colores llamativos</strong> para atraer a los insectos."],k:["Conjunto de pétalos","Colores llamativos"]},
+ {t:"El cáliz",b:[140,272,135,42],s:"flower:caliz",p:["El <strong>cáliz</strong> está formado por <strong>sépalos</strong>: hojitas <strong>verdes</strong> que <strong>protegen la flor</strong>."],k:["Formado por sépalos","Protege la flor"]},
+ {t:"1. Se produce el polen",b:[452,52,156,156],s:"flower:polen",p:["En los <strong>estambres</strong> se produce el <strong>polen</strong>."],k:["En los estambres"]},
+ {t:"2. El polen viaja",b:[637,52,156,156],s:"pollin",p:["El polen <strong>llega al pistilo de otra flor</strong>.","Viaja con el <strong>viento</strong> o con los <strong>insectos</strong>."],k:["Viento o insectos","Polinización"],d:"Buen momento para hablar de las abejas y la importancia de los insectos polinizadores."},
+ {t:"3. Se forma el fruto",b:[637,267,156,156],s:"fruitform",p:["El <strong>ovario madura</strong> y se transforma en el <strong>fruto</strong>, que contiene las <strong>semillas</strong>."],k:["Ovario → fruto","Dentro, las semillas"]},
+ {t:"4. Una nueva planta",b:[452,267,156,156],s:"germ:all",p:["Cuando la semilla <strong>cae al suelo</strong>, <strong>germina</strong> y da origen a una <strong>nueva planta</strong>.","Las plantas se reproducen para que siempre haya nuevas plantas."],k:["Germina","Nueva planta"]}
+ ]},
+{id:"tipos",tab:"Tipos de plantas",titulo:"Hay muchos tipos de plantas",
+ intro:"Según su forma de <strong>reproducirse</strong>, las plantas se clasifican en dos grandes grupos: <strong>con semillas</strong> y <strong>sin semillas</strong>. ¡Descúbrelos!",
+ hs:[
+ {t:"Dos grandes grupos",b:[296,24,208,74],s:"tipos:grupos",p:["Según su forma de reproducirse, las plantas se clasifican en <strong>dos grandes grupos</strong>:","<strong>Plantas con semillas</strong>: angiospermas y gimnospermas.<br><strong>Plantas sin semillas</strong>: musgos y helechos."],k:["Con semillas","Sin semillas"]},
+ {t:"Angiospermas",b:[130,170,130,172],s:"tipos:angio",p:["Las <strong>angiospermas</strong> tienen <strong>flores</strong> y <strong>frutos</strong>, y producen <strong>semillas</strong>.","Ejemplos: el naranjo, el olivo y el azafrán."],k:["Flores y frutos","Producen semillas"]},
+ {t:"Flores grandes o pequeñas",b:[252,276,90,66],s:"tipos:flores",p:["Las flores de las angiospermas pueden ser <strong>grandes y vistosas</strong>, como las del azafrán, o <strong>muy pequeñas</strong>, como las del olivo."],k:["Grandes y vistosas","Muy pequeñas"]},
+ {t:"Árboles, arbustos y hierbas",b:[12,178,120,164],s:"tipos:clases",p:["Las angiospermas son la <strong>mayor parte de las plantas</strong>.","Pueden ser <strong>árboles</strong>, <strong>arbustos</strong> o <strong>hierbas</strong>."],k:["La mayor parte de las plantas"]},
+ {t:"Gimnospermas",b:[318,184,124,158],s:"tipos:gimno",p:["Las <strong>gimnospermas</strong> no tienen flores ni frutos: tienen <strong>piñas</strong>.","También producen <strong>semillas</strong>. Son <strong>árboles</strong> y <strong>arbustos</strong>, como el pino, el ciprés y el abeto."],k:["Tienen piñas","Producen semillas"]},
+ {t:"Hojas en aguja o escama",b:[485,160,92,182],s:"tipos:hojas",p:["Sus hojas suelen ser <strong>alargadas</strong>, con forma de <strong>aguja</strong> (pino, abeto) o de <strong>escama</strong> (ciprés)."],k:["Aguja","Escama"]},
+ {t:"Perennes",b:[440,160,46,182],bp:[462,150],s:"tipos:perennes",p:["La mayoría de las gimnospermas son <strong>perennes</strong>: no pierden todas sus hojas en invierno, siempre están verdes."],k:["Siempre verdes"]},
+ {t:"Musgos",b:[582,368,130,62],s:"tipos:musgo",p:["Los <strong>musgos</strong> no tienen flores ni frutos. Son plantas <strong>muy pequeñas y sencillas</strong>.","Absorben el agua y las sales minerales <strong>por todo su cuerpo</strong>. Viven en zonas húmedas: suelo, rocas y troncos."],k:["Sin semillas","Muy pequeños","Absorben por todo su cuerpo"]},
+ {t:"Helechos",b:[660,250,140,94],s:"tipos:helecho",p:["Los <strong>helechos</strong> tampoco tienen flores ni frutos.","Son <strong>más grandes</strong> que los musgos y tienen <strong>hojas grandes</strong>. Viven en lugares húmedos, como bosques y orillas de los ríos."],k:["Sin semillas","Hojas grandes","Lugares húmedos"]},
+ {t:"Plantas que comemos",b:[66,396,168,90],s:"tipos:comida",p:["La mayoría de las plantas de las que nos alimentamos son <strong>plantas con semillas</strong>.","Sus <strong>frutos</strong> y sus <strong>semillas</strong> son una parte importante de nuestra alimentación."],k:["Frutos y semillas"]}
+ ]}
+];
+
+/* ================= Lógica de exploración ================= */
+const $=s=>document.querySelector(s);
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const stage=$("#stage"),host=$("#mainHost"),scene=$("#scene"),sceneSvg=$("#sceneSvg"),pbody=$("#pbody"),bubble=$("#bubble");
+let cur=0,sel=-1,raf=0,VB=[0,0,800,500],timers=[],autoT=null,sceneOpen=false,mode="explora";
+const seen=L.map(()=>new Set());
+try{const sv=JSON.parse(localStorage.getItem("plantas2-vistos")||"null");if(sv)sv.forEach((a,i)=>a&&seen[i]&&a.forEach(n=>seen[i].add(n)))}catch(e){}
+function save(){try{localStorage.setItem("plantas2-vistos",JSON.stringify(seen.map(s=>[...s])))}catch(e){}}
+
+L.forEach((l,i)=>{const b=document.createElement("button");b.className="tab";b.setAttribute("role","tab");b.innerHTML=`<span class="n">${i+1}</span>${l.tab}`;b.onclick=()=>{stopAuto();showTopic(i)};$("#tabs").append(b)});
+const gt=document.createElement("button");gt.className="tab play";gt.setAttribute("role","tab");gt.innerHTML=`<span class="n">★</span>Juegos`;gt.onclick=()=>{stopAuto();showGames()};$("#tabs").append(gt);
+function setTabs(i){document.querySelectorAll(".tab").forEach((t,j)=>t.setAttribute("aria-selected",j===i))}
+
+function say(html,pop=true){bubble.innerHTML=html;if(pop){bubble.classList.remove("pop");void bubble.offsetWidth;bubble.classList.add("pop")}}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+
+function showTopic(i){mode="explora";$("#explora").hidden=false;$("#juegos").hidden=true;cur=i;sel=-1;setTabs(i);clearTimers();
+ closeScene(true);ID="m"+(++UID);
+ host.innerHTML=`<svg id="mainSvg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ilustración: ${L[i].titulo}" class="${$("#badges").checked?"":"hide-badges"}">${MAIN[L[i].id]()}</svg>`;
+ VB=[0,0,800,500];
+ host.querySelectorAll(".hot").forEach(g=>{const j=+g.dataset.i;g.addEventListener("click",()=>{stopAuto();pick(j)});g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();stopAuto();pick(j)}})});
+ if(RM){const sv=$("#mainSvg");try{sv.pauseAnimations()}catch(e){}}
+ $("#chips").innerHTML="";L[i].hs.forEach((h,j)=>{const c=document.createElement("button");c.className="chip";c.textContent=`${j+1}. ${h.t}`;c.onclick=()=>{stopAuto();pick(j)};$("#chips").append(c)});
+ renderIntro();marks();
+}
+function renderIntro(){const l=L[cur];
+ pbody.innerHTML=`<div class="eyebrow">Tema ${cur+1} de ${L.length}</div><h2>${l.titulo}</h2><div class="content"><p>${l.intro}</p><p style="color:var(--muted)">Hay <strong>${l.hs.length} partes</strong> por descubrir. Toca una en el dibujo, usa los números de abajo o pulsa <em>Recorrido</em> para verlas todas.</p></div>`;
+ say(l.intro);$("#count").textContent=`0 / ${l.hs.length}`}
+
+function boxVB(b){const cx=b[0]+b[2]/2,cy=b[1]+b[3]/2;let w=b[2]*1.5,h=b[3]*1.5;if(w/h>1.6)h=w/1.6;else w=h*1.6;w=Math.min(800,Math.max(w,190));h=w/1.6;let x=Math.min(800-w,Math.max(0,cx-w/2)),y=Math.min(500-h,Math.max(0,cy-h/2));return [x,y,w,h]}
+function animVB(to,ms,done){const svg=$("#mainSvg");if(!svg){done&&done();return}cancelAnimationFrame(raf);const from=VB.slice(),t0=performance.now();
+ if(RM||ms===0){VB=to.slice();svg.setAttribute("viewBox",VB.join(" "));done&&done();return}
+ const f=now=>{const k=Math.min(1,(now-t0)/ms),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;VB=from.map((v,i)=>v+(to[i]-v)*e);svg.setAttribute("viewBox",VB.map(v=>v.toFixed(2)).join(" "));if(k<1)raf=requestAnimationFrame(f);else done&&done()};raf=requestAnimationFrame(f)}
+
+function pick(j){const l=L[cur],h=l.hs[j];sel=j;seen[cur].add(j);save();
+ pbody.innerHTML=`<div class="eyebrow">${l.titulo} · ${j+1} de ${l.hs.length}</div><h2>${h.t}</h2><div class="content">${h.p.map(p=>`<p>${p}</p>`).join("")}
+  ${h.k?`<div class="box key"><h3>Palabras clave</h3><ul>${h.k.map(k=>`<li>${k}</li>`).join("")}</ul></div>`:""}
+</div>`;
+ [...pbody.querySelectorAll(".content > *")].forEach((e,k)=>e.style.animationDelay=(.1+k*.1)+"s");pbody.scrollTop=0;
+ marks();clearTimers();
+ if(innerWidth<900){const r=stage.getBoundingClientRect();if(r.top<0||r.top>innerHeight*.4)stage.scrollIntoView({behavior:RM?"auto":"smooth",block:"start"})}
+ if(sceneOpen){scene.classList.remove("on");timers.push(setTimeout(()=>playScene(h),RM?0:300));animVB(boxVB(h.b),0)}
+ else{say(`¡Vamos a ver <strong>${h.t.toLowerCase().replace(/^\d\. /,"")}</strong>!`);animVB(boxVB(h.b),750,()=>timers.push(setTimeout(()=>playScene(h),150)))}
+ checkDone()}
+function playScene(h){const sc=buildScene(h.s);
+ sceneSvg.innerHTML=`<svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animación: ${h.t}">${sc.svg}</svg>`;
+ scene.hidden=false;sceneOpen=true;requestAnimationFrame(()=>scene.classList.add("on"));
+ const svg=sceneSvg.querySelector("svg");
+ if(RM){try{svg.setCurrentTime(40);svg.pauseAnimations()}catch(e){}say(sc.cap.map(c=>c[1]).join(" "));return}
+ sc.cap.forEach(([t,txt])=>timers.push(setTimeout(()=>say(txt),t*1000)));}
+function closeScene(instant){clearTimers();if(!sceneOpen&&scene.hidden)return;scene.classList.remove("on");sceneOpen=false;
+ const done=()=>{scene.hidden=true;sceneSvg.innerHTML=""};if(instant||RM)done();else setTimeout(done,450);
+ if(!instant)animVB([0,0,800,500],700)}
+$("#back").onclick=()=>{stopAuto();closeScene();sel=-1;marks();say(checkDone(true)?doneMsg():"Toca otra parte que brille. ✨")};
+$("#again").onclick=()=>{if(sel>=0){clearTimers();playScene(L[cur].hs[sel])}};
+
+function marks(){const n=L[cur].hs.length,s=seen[cur];
+ host.querySelectorAll(".hot").forEach(g=>{const j=+g.dataset.i;g.classList.toggle("seen",s.has(j));g.classList.toggle("active",j===sel)});
+ document.querySelectorAll(".chip").forEach((c,j)=>{c.classList.toggle("seen",s.has(j));c.classList.toggle("active",j===sel)});
+ $("#starTxt").textContent=`Has descubierto ${s.size} de ${n}`;
+ $("#starRow").innerHTML=Array.from({length:n},(_,k)=>`<span class="${k<s.size?"on":""}">★</span>`).join("");
+ $("#count").textContent=`${sel+1} / ${n}`}
+function doneMsg(){return `¡Genial! Has descubierto todo sobre <strong>${L[cur].titulo.toLowerCase()}</strong>. ¿Practicamos?<br><button class="go" onclick="showGames()">Ir a los juegos ★</button>`}
+let celebrated=new Set();
+function checkDone(q){const d=seen[cur].size===L[cur].hs.length;if(q)return d;if(d&&!celebrated.has(cur)){celebrated.add(cur);confetti()}return d}
+
+function step(d){const n=L[cur].hs.length;let j=sel+d;
+ if(j>=n){if(cur<L.length-1){showTopic(cur+1);timers.push(setTimeout(()=>pick(0),400))}else stopAuto();return}
+ if(j<0){if(cur>0){showTopic(cur-1);timers.push(setTimeout(()=>pick(L[cur].hs.length-1),400))}else{closeScene();renderIntro();sel=-1;marks()}return}
+ pick(j)}
+$("#next").onclick=()=>{stopAuto();step(1)};$("#prev").onclick=()=>{stopAuto();step(-1)};
+const DUR=11000;
+function tick(){const t=$("#timer");t.classList.remove("run");void t.offsetWidth;t.style.animationDuration=DUR+"ms";t.classList.add("run")}
+function startAuto(){$("#auto").classList.add("on");$("#auto").textContent="❚❚ Pausa";step(1);tick();autoT=setInterval(()=>{step(1);if(autoT)tick()},DUR)}
+function stopAuto(){if(autoT){clearInterval(autoT);autoT=null}$("#auto").classList.remove("on");$("#auto").textContent="▶ Recorrido";$("#timer").classList.remove("run")}
+$("#auto").onclick=()=>autoT?stopAuto():startAuto();
+$("#badges").onchange=e=>{const s=$("#mainSvg");if(s)s.classList.toggle("hide-badges",!e.target.checked)};
+document.addEventListener("keydown",e=>{if(mode!=="explora"||/INPUT|BUTTON/.test(e.target.tagName)||e.target.closest&&e.target.closest(".hot"))return;if(e.key==="ArrowRight"){stopAuto();step(1)}if(e.key==="ArrowLeft"){stopAuto();step(-1)}if(e.key==="Escape"&&sceneOpen)$("#back").click()});
+
+function confetti(){if(RM)return;const box=$("#confetti"),cols=["#ffd23f","#56b35a","#f7a3c4","#2f8fe6","#ff9a1f"];for(let i=0;i<70;i++){const c=document.createElement("i");c.style.left=Math.random()*100+"vw";c.style.background=cols[i%5];c.style.animationDuration=(1.8+Math.random()*1.6)+"s";c.style.animationDelay=(Math.random()*.4)+"s";box.append(c);setTimeout(()=>c.remove(),4000)}}
+
+/* ================= Juegos ================= */
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const ga=$("#garea");
+const GAMES=[
+ {id:"etiqueta",t:"Etiqueta las partes",d:"Pon cada nombre en su sitio: la planta y la flor.",ic:()=>{ID="g"+(++UID);return bg(300)+plant(200,300,170,{sway:true})+rootsMain(200,300,0,1,false)},run:gLabel},
+ {id:"clasifica",t:"¿Dónde va?",d:"Clasifica frutos, tallos, raíces y procesos.",ic:()=>{ID="g"+(++UID);return paper("#e4f1ea")+apple(115,205,55)+walnut(285,205,53)+T(200,225,"?",null,{s:60})},run:gSort},
+ {id:"ordena",t:"Ordena los pasos",d:"Germinación y reproducción, paso a paso.",ic:()=>{ID="g"+(++UID);return bg(220)+[[80,1],[200,2],[320,3]].map(([x,k])=>`<ellipse cx="${x}" cy="250" rx="18" ry="12" fill="#f4ead2" stroke="#a5824c" stroke-width="3"/>`+(k>1?PS(`M${x} 250 L${x} 300`,C.root,4):"")+(k>2?PS(`M${x} 240 L${x} 150`,C.stem,6)+leaf(x,165,34,-30)+leaf(x,165,34,210):"")+T(x,128,k,null,{s:34})).join("")},run:gOrder},
+ {id:"hoja",t:"Adivina la hoja",d:"¿Qué forma o qué borde tiene?",ic:()=>{ID="g"+(++UID);return paper("#eaf6e4")+grid()+`<g transform="translate(-40 0)">${shapeStatic("acorazonada")}</g><g transform="translate(150 20) scale(.8)">${shapeStatic("palmeada")}</g>`},run:gLeaf},
+ {id:"quiz",t:"Pon a prueba",d:"10 preguntas para repasar todo.",ic:()=>{ID="g"+(++UID);return paper("#fdf0c9")+`<circle cx="200" cy="200" r="110" fill="#ffd23f" stroke="#c98500" stroke-width="8"/><text x="200" y="250" text-anchor="middle" font-size="150" font-weight="800" fill="#5a3a00" style="font-family:var(--display)">?</text>`},run:gQuiz}
+];
+GAMES.forEach(g=>{const b=document.createElement("button");b.className="gcard";b.innerHTML=`<svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${g.ic()}</svg><b>${g.t}</b><span>${g.d}</span>`;b.onclick=()=>{ga.hidden=false;g.run();ga.scrollIntoView({behavior:RM?"auto":"smooth",block:"start"})};$("#gmenu").append(b)});
+function showGames(){mode="juegos";clearTimers();closeScene(true);$("#explora").hidden=true;$("#juegos").hidden=false;setTabs(L.length);ga.hidden=true;ga.innerHTML="";scrollTo({top:0,behavior:RM?"auto":"smooth"})}
+window.showGames=showGames;
+function head(t,meta){return `<div class="ghead"><h3>${t}</h3><span class="meta">${meta}</span><button class="gbtn" data-menu>← Juegos</button></div>`}
+function wireMenu(){ga.querySelectorAll("[data-menu]").forEach(b=>b.onclick=()=>{ga.hidden=true;ga.innerHTML="";$("#gmenu").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"})})}
+function endScreen(ok,total,again){const r=ok/total,st=r>=.9?3:r>=.6?2:1;ga.innerHTML=`<div class="end"><div class="big">${"★".repeat(st)}<span style="opacity:.25">${"★".repeat(3-st)}</span></div><h3>${st===3?"¡Fantástico!":st===2?"¡Muy bien!":"¡Sigue practicando!"}</h3><p>Has acertado <strong>${ok}</strong> de <strong>${total}</strong> a la primera.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="gbtn primary" id="again2">Jugar otra vez</button><button class="gbtn" data-menu>Otros juegos</button></div></div>`;$("#again2").onclick=again;wireMenu();if(st>=2)confetti()}
+function fb(el,ok,txt){el.className="fb "+(ok?"ok":"no");el.textContent=txt}
+function shake(el){el.classList.remove("shake");void el.offsetWidth;el.classList.add("shake")}
+function makeDraggable(card,id){card.draggable=true;card.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",id);card.classList.add("sel")});card.addEventListener("dragend",()=>card.classList.remove("sel"))}
+
+/* Etiquetar */
+function gLabel(){const rounds=[
+ {n:"La planta",svg:()=>{ID="g"+(++UID);return bg(260)+pebbles(260)+plant(200,260,170,{sway:false})+rootsMain(200,260,0,1,false)+line(290,72,226,88,"#1d2b22",2.5,"5 4")+line(92,140,148,152,"#1d2b22",2.5,"5 4")+line(305,205,208,205,"#1d2b22",2.5,"5 4")+line(98,325,170,300,"#fff",2.5,"5 4")},
+  t:[["Flor",320,66],["Hoja",70,138],["Tallo",330,205],["Raíz",76,330]]},
+ {n:"La flor",svg:()=>{ID="g"+(++UID);const f=flowerParts();return bg(440)+f.stem+f.caliz+f.corola+f.estambres+f.estilo+f.ovario+line(292,108,212,152,"#1d2b22",2.5,"5 4")+line(98,128,162,168,"#1d2b22",2.5,"5 4")+line(318,214,292,250,"#1d2b22",2.5,"5 4")+line(98,330,160,306,"#1d2b22",2.5,"5 4")+line(310,302,222,272,"#1d2b22",2.5,"5 4")},
+  t:[["Pistilo",320,100],["Estambres",76,120],["Corola",330,200],["Cáliz",76,340],["Ovario",330,310]]}];
+ let r=0,ok=0,tot=0;
+ function round(){const R=rounds[r];let first=new Set(),selId=null;
+  ga.innerHTML=head("Etiqueta las partes",`Ronda ${r+1} de ${rounds.length} · ${R.n}`)+`<p class="tip">Toca un nombre y después su recuadro (o arrástralo).</p><div class="lstage"><svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">${R.svg()}</svg>${R.t.map(([n,x,y])=>`<button class="target" data-n="${n}" style="left:${x/4}%;top:${y/4}%">?</button>`).join("")}</div><div class="tray" id="tray">${shuffle(R.t.map(t=>t[0])).map(n=>`<span class="card" data-n="${n}" tabindex="0" role="button">${n}</span>`).join("")}</div><div class="fb" id="fb"></div>`;wireMenu();
+  const F=$("#fb");
+  ga.querySelectorAll(".card").forEach(c=>{makeDraggable(c,c.dataset.n);const sel=()=>{if(c.classList.contains("done"))return;ga.querySelectorAll(".card").forEach(x=>x.classList.remove("sel"));c.classList.add("sel");selId=c.dataset.n};c.onclick=sel;c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel()}}});
+  const tryPut=(tg,n)=>{if(!n||tg.classList.contains("ok"))return;const card=ga.querySelector(`.card[data-n="${n}"]`);
+   if(tg.dataset.n===n){tg.classList.add("ok");tg.classList.remove("no");tg.textContent=n;card.classList.add("done");card.classList.remove("sel");card.draggable=false;if(!first.has(n)){ok++}tot++;selId=null;fb(F,true,"¡Correcto! 🌱");
+    if(ga.querySelectorAll(".target.ok").length===R.t.length){F.innerHTML="¡Ronda completada! ";const b=document.createElement("button");b.className="gbtn sunny";b.textContent=r<rounds.length-1?"Siguiente ronda →":"Ver resultado";b.onclick=()=>{r++;r<rounds.length?round():endScreen(ok,tot,()=>{r=0;ok=0;tot=0;round()})};F.append(b);confetti()}}
+   else{first.add(n);tg.classList.add("no");shake(tg);setTimeout(()=>tg.classList.remove("no"),600);fb(F,false,`Ahí no va «${n}». ¡Prueba otra vez!`)}};
+  ga.querySelectorAll(".target").forEach(tg=>{tg.onclick=()=>tryPut(tg,selId);tg.ondragover=e=>e.preventDefault();tg.ondrop=e=>{e.preventDefault();tryPut(tg,e.dataTransfer.getData("text/plain"))}})}
+ round()}
+
+/* Clasificar */
+function gSort(){const rounds=[
+ {n:"¿Fruto carnoso o seco?",bins:["Carnoso","Seco"],items:[["Manzana",0],["Naranja",0],["Fresa",0],["Melocotón",0],["Nuez",1],["Almendra",1],["Avellana",1],["Pipa de girasol",1]]},
+ {n:"¿Tallo herbáceo o leñoso?",bins:["Herbáceo","Leñoso"],items:[["Perejil",0],["Trigo",0],["Hierbabuena",0],["Margarita",0],["Pino",1],["Roble",1],["Rosal",1],["Olivo",1]]},
+ {n:"¿Qué tipo de raíz?",bins:["Principal","Pequeñas y numerosas","De reserva"],items:[["Diente de león",0],["Roble",0],["Trigo",1],["Césped",1],["Zanahoria",2],["Remolacha",2]]},
+ {n:"¿Con semillas o sin semillas?",bins:["Con semillas","Sin semillas"],items:[["Pino",0],["Naranjo",0],["Azafrán",0],["Olivo",0],["Abeto",0],["Musgo",1],["Helecho",1]]},
+ {n:"¿Angiosperma o gimnosperma?",bins:["Angiosperma","Gimnosperma"],items:[["Naranjo",0],["Olivo",0],["Azafrán",0],["Manzano",0],["Pino",1],["Abeto",1],["Ciprés",1],["Tiene flores y frutos",0],["Tiene piñas",1]]},
+ {n:"¿Fotosíntesis o respiración?",bins:["Fotosíntesis","Respiración"],items:[["Necesita la luz del Sol",0],["Fabrica el alimento",0],["Expulsa oxígeno",0],["Toma dióxido de carbono",0],["Toma oxígeno",1],["Obtiene energía",1],["Expulsa dióxido de carbono",1],["Ocurre en todas las partes",1]]}];
+ let r=0,ok=0,tot=0;
+ function round(){const R=rounds[r];let selI=null;const items=shuffle(R.items.map((it,i)=>({t:it[0],c:it[1],i})));
+  ga.innerHTML=head("¿Dónde va?",`Ronda ${r+1} de ${rounds.length}`)+`<p class="tip"><strong>${R.n}</strong> Toca una tarjeta y luego su grupo.</p><div class="tray" id="tray">${items.map(it=>`<span class="card" data-i="${it.i}" tabindex="0" role="button">${it.t}</span>`).join("")}</div><div class="bins">${R.bins.map((b,k)=>`<div class="bin" data-k="${k}" tabindex="0" role="button"><h4>${b}</h4><div class="in"></div></div>`).join("")}</div><div class="fb" id="fb"></div>`;wireMenu();
+  const F=$("#fb"),wrong=new Set();
+  ga.querySelectorAll(".card").forEach(c=>{makeDraggable(c,c.dataset.i);const s=()=>{ga.querySelectorAll(".card").forEach(x=>x.classList.remove("sel"));c.classList.add("sel");selI=c.dataset.i};c.onclick=s;c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();s()}}});
+  const put=(bin,i)=>{if(i==null||i==="")return;const it=R.items[+i],card=ga.querySelector(`#tray .card[data-i="${i}"]`);if(!card)return;
+   if(+bin.dataset.k===it[1]){card.classList.remove("sel");card.classList.add("done");card.draggable=false;bin.querySelector(".in").append(card);if(!wrong.has(+i))ok++;tot++;selI=null;fb(F,true,"¡Bien!");
+    if(!ga.querySelector("#tray .card")){F.innerHTML="¡Todo clasificado! ";const b=document.createElement("button");b.className="gbtn sunny";b.textContent=r<rounds.length-1?"Siguiente ronda →":"Ver resultado";b.onclick=()=>{r++;r<rounds.length?round():endScreen(ok,tot,()=>{r=0;ok=0;tot=0;round()})};F.append(b);confetti()}}
+   else{wrong.add(+i);bin.classList.add("no");shake(bin);setTimeout(()=>bin.classList.remove("no"),600);fb(F,false,`«${it[0]}» no va en ${R.bins[+bin.dataset.k].toLowerCase()}. ¡Piénsalo otra vez!`)}};
+  ga.querySelectorAll(".bin").forEach(b=>{b.onclick=()=>put(b,selI);b.onkeydown=e=>{if(e.key==="Enter"){put(b,selI)}};b.ondragover=e=>{e.preventDefault();b.classList.add("hover")};b.ondragleave=()=>b.classList.remove("hover");b.ondrop=e=>{e.preventDefault();b.classList.remove("hover");put(b,e.dataTransfer.getData("text/plain"))}})}
+ round()}
+
+/* Ordenar */
+function gOrder(){const rounds=[
+ {n:"La germinación de una semilla",steps:["La semilla cae al suelo y encuentra humedad.","La semilla se abre y sale la raíz.","Crecen el tallo y las primeras hojas.","La plantita sigue creciendo y se convierte en una planta."]},
+ {n:"Cómo se reproducen las plantas",steps:["En los estambres se produce el polen.","El polen llega al pistilo de otra flor, con el viento o con los insectos.","El ovario madura y se transforma en el fruto, con las semillas.","La semilla cae al suelo, germina y nace una nueva planta."]}];
+ let r=0,ok=0,tot=0;
+ function round(){const R=rounds[r];let next=0,miss=0;
+  ga.innerHTML=head("Ordena los pasos",`Ronda ${r+1} de ${rounds.length} · ${R.n}`)+`<p class="tip">Toca los pasos en orden: ¿qué pasa primero?</p><div class="slots">${R.steps.map(()=>`<div class="slot"></div>`).join("")}</div><div class="tray">${shuffle(R.steps.map((s,i)=>({s,i}))).map(o=>`<span class="card" data-i="${o.i}" tabindex="0" role="button">${o.s}</span>`).join("")}</div><div class="fb" id="fb"></div>`;wireMenu();
+  const F=$("#fb"),slots=ga.querySelectorAll(".slot");
+  ga.querySelectorAll(".tray .card").forEach(c=>{const go=()=>{if(+c.dataset.i===next){slots[next].textContent=c.textContent;slots[next].classList.add("ok");c.remove();next++;tot++;if(miss===0)ok++;miss=0;fb(F,true,"¡Eso es!");
+    if(next===R.steps.length){F.innerHTML="¡Orden perfecto! ";const b=document.createElement("button");b.className="gbtn sunny";b.textContent=r<rounds.length-1?"Siguiente ronda →":"Ver resultado";b.onclick=()=>{r++;r<rounds.length?round():endScreen(ok,tot,()=>{r=0;ok=0;tot=0;round()})};F.append(b);confetti()}}
+   else{miss++;shake(c);fb(F,false,"Todavía no toca ese paso. ¿Qué pasa antes?")}};c.onclick=go;c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}})}
+ round()}
+
+/* Adivina la hoja */
+function leafQuizSVG(it){ID="g"+(++UID);let s=paper("#eaf6e4")+grid();if(it.k==="shape"){const S=SHAPES[it.n];s+=D(S.pet,.1,.5,"#3d7f2a",6)+S.d.map((d,i)=>`<path d="${d}" fill="#5cb85c" opacity="0">${A.fade(1.2,.6)}</path>`+D(d,.2+i*.1,1.2,"#2e7d32",3.5)).join("")+(it.n==="aguja"?`<path d="${S.pet}" fill="#8a5a33"/>`:"")}else{const p=edgePath(it.n);s+=PS("M10 200 L40 200","#3d7f2a",6)+`<path d="${p}" fill="#5cb85c" opacity="0">${A.fade(1.2,.6)}</path>`+D(p,.2,1.4,"#2e7d32",3.5)}return s}
+function gLeaf(){const sh=Object.keys(SHAPES),ed=["lisa","dentada","lobulada"];
+ const qs=shuffle(sh).slice(0,6).map(n=>({k:"shape",n})).concat(shuffle(ed).slice(0,2).map(n=>({k:"edge",n})));
+ const Q=shuffle(qs);let i=0,ok=0;
+ function q(){const it=Q[i];const svg=leafQuizSVG(it);
+  const pool=it.k==="shape"?sh:ed,names=it.k==="shape"?SHAPE_NAMES:EDGE_NAMES;
+  const opts=it.k==="shape"?shuffle([it.n].concat(shuffle(pool.filter(x=>x!==it.n)).slice(0,3))):shuffle(ed);
+  ga.innerHTML=head("Adivina la hoja",`${i+1} de ${Q.length} · Aciertos: ${ok}`)+`<div class="qbox"><div class="leafview"><svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">${svg}</svg></div><div class="q">${it.k==="shape"?"¿Qué forma tiene esta hoja?":"¿Cómo es el borde de esta hoja?"}</div><div class="opts">${opts.map(o=>`<button class="opt" data-o="${o}">${names[o]}</button>`).join("")}</div><div id="ex"></div></div>`;wireMenu();
+  ga.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(ga.querySelector(".opt.ok"))return;const right=b.dataset.o===it.n;if(right){b.classList.add("ok");ok++}else{b.classList.add("no");ga.querySelector(`.opt[data-o="${it.n}"]`).classList.add("ok")}
+   $("#ex").innerHTML=`<div class="expl">${right?"¡Correcto! ":"Era "+names[it.n].toLowerCase()+". "}${it.k==="shape"?"Ejemplo: "+SHAPES[it.n].ej+".":""}</div><p style="text-align:center"><button class="gbtn sunny" id="nx">${i<Q.length-1?"Siguiente →":"Ver resultado"}</button></p>`;
+   $("#nx").onclick=()=>{i++;i<Q.length?q():endScreen(ok,Q.length,gLeaf)}})}
+ q()}
+
+/* Quiz */
+const BANK=[
+ ["¿En cuántos grandes grupos se clasifican las plantas según su forma de reproducirse?",["En dos: con semillas y sin semillas","En tres: árboles, arbustos y hierbas","En cuatro: raíz, tallo, hojas y flor"],"Plantas con semillas y plantas sin semillas."],
+ ["¿Qué tienen las angiospermas?",["Flores y frutos","Piñas","Ni flores ni frutos"],"El naranjo, el olivo y el azafrán son angiospermas."],
+ ["¿Qué tienen las gimnospermas?",["Piñas","Flores y frutos","Esporas en las hojas"],"Pinos, cipreses y abetos tienen piñas."],
+ ["¿Cuál de estas plantas es una gimnosperma?",["El abeto","El naranjo","El musgo"],"El abeto tiene piñas: es una gimnosperma."],
+ ["¿Cuáles son las plantas sin semillas?",["Los musgos y los helechos","Los pinos y los abetos","El olivo y el azafrán"],"No tienen flores ni frutos."],
+ ["¿Cómo absorben el agua los musgos?",["Por todo su cuerpo","Solo por la raíz","Por las piñas"],"Son plantas muy pequeñas y sencillas."],
+ ["¿Dónde viven los helechos?",["En lugares húmedos","En desiertos secos","Dentro del agua del mar"],"Por ejemplo, en bosques y orillas de ríos."],
+ ["¿Qué plantas son las más abundantes?",["Las plantas con semillas","Los musgos","Los helechos"],"Y, entre ellas, las angiospermas son la mayor parte."],
+ ["¿Qué quiere decir que una planta es perenne?",["Que siempre tiene hojas verdes","Que no tiene semillas","Que vive en el agua"],"La mayoría de las gimnospermas son perennes."],
+ ["¿Qué parte de la planta absorbe el agua del suelo?",["La raíz","El tallo","Las hojas"],"La raíz absorbe del suelo el agua y las sales minerales."],
+ ["¿Dónde fabrica la planta su alimento?",["En las hojas","En la raíz","En la flor"],"Las hojas son la cocina de la planta."],
+ ["¿Cómo se llama el proceso con el que la planta fabrica su alimento?",["Fotosíntesis","Respiración","Germinación"],"La fotosíntesis usa la luz del Sol para fabricar alimento."],
+ ["Durante la fotosíntesis, ¿qué gas expulsa la planta?",["Oxígeno","Dióxido de carbono","Ninguno"],"La planta toma dióxido de carbono y expulsa oxígeno."],
+ ["¿Qué sustancia da el color verde a las hojas?",["La clorofila","La savia","El polen"],"La clorofila capta la luz del Sol y es verde."],
+ ["La savia bruta está formada por…",["Agua y sales minerales","El alimento fabricado","Polen y néctar"],"La savia bruta sube desde la raíz."],
+ ["¿Adónde va la savia elaborada?",["Se reparte por toda la planta","Solo a las hojas","Sale por la raíz"],"La savia elaborada es el alimento y llega a todas partes."],
+ ["¿Qué obtiene la planta al respirar?",["Energía","Luz","Agua"],"Con la respiración la planta obtiene energía para vivir."],
+ ["¿Cuándo respiran las plantas?",["Siempre, de día y de noche","Solo de noche","Solo de día"],"Respiran siempre; de noche es lo único que hacen porque no hay fotosíntesis."],
+ ["¿Cómo se llama la parte ancha y plana de la hoja?",["Limbo","Pecíolo","Tallo"],"El limbo es la parte ancha; el pecíolo la une al tallo."],
+ ["¿Qué hace el pecíolo?",["Une la hoja al tallo","Capta la luz","Fabrica polen"],"El pecíolo es el rabito de la hoja."],
+ ["¿Qué tipo de raíz tiene la zanahoria?",["De reserva","Principal","Pequeñas y numerosas"],"Guarda alimento: por eso es gruesa."],
+ ["¿Cómo es un árbol?",["Tronco alto y ramas lejos del suelo","Tronco corto y ramas cerca del suelo","Tallo blando y verde"],"Los arbustos son los de tronco corto."],
+ ["¿Cómo son los tallos de las hierbas?",["Finos, blandos y verdes","Duros y rígidos","Gruesos y marrones"],"Son tallos herbáceos."],
+ ["¿Cuál de estos es un fruto seco?",["La avellana","La fresa","El melocotón"],"Los frutos secos tienen poca agua."],
+ ["¿Qué hay dentro de una semilla?",["Un embrión y alimentos","Polen","Clorofila y agua"],"El embrión es la futura planta."],
+ ["Cuando una semilla germina, ¿qué sale primero?",["La raíz","Las hojas","La flor"],"Primero sale la raíz; después el tallo y las hojas."],
+ ["¿Cuál es la parte femenina de la flor?",["El pistilo","Los estambres","Los sépalos"],"El pistilo tiene el ovario."],
+ ["¿Dónde se produce el polen?",["En los estambres","En el ovario","En los pétalos"],"Los estambres son la parte masculina."],
+ ["¿En qué se transforma el ovario?",["En el fruto","En el polen","En la raíz"],"El ovario madura y se convierte en el fruto con las semillas."],
+ ["¿Cómo se llama el conjunto de pétalos?",["Corola","Cáliz","Limbo"],"La corola suele tener colores llamativos."],
+ ["¿Para qué sirve el cáliz?",["Para proteger la flor","Para atraer insectos","Para fabricar polen"],"El cáliz está formado por sépalos verdes."]];
+function gQuiz(){const Q=shuffle(BANK).slice(0,10);let i=0,ok=0;
+ function q(){const [p,opts,ex]=Q[i];const right=opts[0];
+  ga.innerHTML=head("Pon a prueba",`${i+1} de ${Q.length} · Aciertos: ${ok}`)+`<div class="qbox"><div class="q">${p}</div><div class="opts">${shuffle(opts).map(o=>`<button class="opt">${o}</button>`).join("")}</div><div id="ex"></div></div>`;wireMenu();
+  ga.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(ga.querySelector(".opt.ok"))return;const r=b.textContent===right;if(r){b.classList.add("ok");ok++}else{b.classList.add("no");[...ga.querySelectorAll(".opt")].find(x=>x.textContent===right).classList.add("ok")}
+   $("#ex").innerHTML=`<div class="expl"><strong>${r?"¡Correcto!":"¡Casi!"}</strong> ${ex}</div><p style="text-align:center"><button class="gbtn sunny" id="nx">${i<Q.length-1?"Siguiente →":"Ver resultado"}</button></p>`;$("#nx").onclick=()=>{i++;i<Q.length?q():endScreen(ok,Q.length,gQuiz)}})}
+ q()}
+
+showTopic(0);
+</script>
